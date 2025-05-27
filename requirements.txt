@@ -9,4 +9,4 @@ bandit
 pip-audit
 flake8
 black
-coverage
+pytest-cov
