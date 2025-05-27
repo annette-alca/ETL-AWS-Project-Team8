@@ -70,11 +70,11 @@ run-pip-audit:
 	$(call execute_in_env, pip-audit)
 	$(call execute_in_env, pip-audit  -r requirements.txt)
 
-## Run the unit tests
+## Run the unit tests $(call execute_in_env, PYTHONPATH=${PYTHONPATH} pytest tests/load/* -vvvrP) ($(call execute_in_env, PYTHONPATH=${PYTHONPATH} pytest tests/transform/* -vvvrP)
 unit-test:
 	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} pytest tests/extract/* -vvvrP)
-	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} pytest tests/transform/* -vvvrP)
-	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} pytest tests/load/* -vvvrP)
+	
+
 
 ## Run the coverage check
 check-coverage:
