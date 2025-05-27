@@ -1,8 +1,8 @@
 name: de-terrific-totes
 on:
-    pull_request:
-        branches:
-            main
+  push:
+    branches:
+      - main
 jobs:
     run-tests:
         name: run-tests
