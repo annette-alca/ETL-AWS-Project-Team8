@@ -1,5 +1,3 @@
-venv
 .env
-*/*/__pychache__
-.coverage
-query_helper.txt
+venv
+*/*/__pycache__

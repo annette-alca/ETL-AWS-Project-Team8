@@ -1,6 +1,6 @@
 import pg8000
 import json
-import boto3
+# import boto3
 import os
 # from pg8000.native import literal
 from src.extract.utils import *
@@ -39,4 +39,6 @@ if __name__ == "__main__":
             pass
         tab_data, extract_time  = get_all_data(db,table_name)
         save_to_tempdata(tab_data, extract_time, table_name)
+
+    db.close()
    
