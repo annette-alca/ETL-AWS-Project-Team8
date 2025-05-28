@@ -167,9 +167,3 @@ resource "aws_iam_role_policy_attachment" "state_machine_cw_policy_attachment" {
   role = aws_iam_role.iam_for_state_machine.name
   policy_arn = aws_iam_policy.cw_policy.arn
 }
-
-# # test 
-# resource "aws_cloudwatch_log_resource_policy" "cloudwatch_policy" {
-#   policy_document = data.aws_iam_policy_document.cw_document.json
-#   policy_name     = "cloudwatch_policy"
-# }

@@ -14,9 +14,3 @@ resource "aws_cloudwatch_event_target" "totes-state-machine" {
   role_arn = aws_iam_role.iam_for_state_machine.arn
   input = jsonencode({})
 }
-
-# # scheduler targeting cloudwatch log 
-# resource "aws_cloudwatch_event_target" "example" {
-#   rule = aws_cloudwatch_event_rule.scheduler.name
-#   arn  = aws_cloudwatch_log_group.log_group_for_sfn.arn
-# }

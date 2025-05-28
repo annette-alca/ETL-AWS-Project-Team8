@@ -26,23 +26,3 @@ EOF
 resource "aws_cloudwatch_log_group" "log_group_for_sfn" {
   name = "log_group_for_sfn"
 }
-
-
-# resource "null_resource" "enable_step_function_logging" {
-#       triggers = {
-#     state_machine_arn  = aws_sfn_state_machine.totes-state-machine.arn
-#     logs_params=<<PARAMS
-#     {
-#         "level":"ALL",
-#         "includeExecutionData":true,
-#         "destinations":[
-#             {
-#                 "cloudWatchLogsLogGroup":{
-#                     "logGroupArn":"${aws_cloudwatch_log_group.log_group_for_sfn.arn}:*"
-#                     }
-#                 }
-#             ]
-#             }
-#     PARAMS
-#     }
-# }
