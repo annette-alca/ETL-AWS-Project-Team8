@@ -1,2 +1,2 @@
-def lambda_extract():
+def lambda_extract(events, context):
     return "team8"

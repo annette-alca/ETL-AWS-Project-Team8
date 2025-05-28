@@ -1,5 +1,4 @@
-#lambda 1
-
+# Extract lambda
 data "archive_file" "lambda_extract" {
   type        = "zip"
   source_file = "${path.module}/../src/extract/lambda_extract.py" # test file
@@ -12,7 +11,7 @@ resource "aws_lambda_function" "test_lambda" {
   filename      = "${path.root}/deployments/lambda_extract.zip"
   function_name = "lambda_extract"
   role          = aws_iam_role.iam_for_lambda.arn
-  handler       = "lambda_func.lambda_extract"
+  handler       = "lambda_extract.lambda_extract"
 
   source_code_hash = data.archive_file.lambda_extract.output_base64sha256
 
