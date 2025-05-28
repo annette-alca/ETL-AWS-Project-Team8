@@ -10,3 +10,4 @@ pip-audit
 flake8
 black
 pytest-cov
+python-dotenv
