@@ -1,5 +1,8 @@
-venv
 .env
-*/*/__pychache__
+creds.txt
+venv
+**/.terraform*
+*.tfstate*
+query_helper*
+*/*/__pycache__
 .coverage
-query_helper.txt
