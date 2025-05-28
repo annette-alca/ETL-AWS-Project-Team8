@@ -3,7 +3,7 @@ resource "aws_cloudwatch_event_rule" "scheduler" {
   name = "trigger_step_function"
   description = "tigger step function every 20 mins"
   schedule_expression = "rate(20 minutes)" 
-  state = "ENABLED"
+  state = "DISABLED" # temporarily disabled 
 }
 
 # scheduler targeting state machine 
