@@ -3,4 +3,4 @@ import pytest
 
 
 def test_something():
-    assert lambda_extract() == "team8"
+    assert lambda_extract(None, None) == "team8"
