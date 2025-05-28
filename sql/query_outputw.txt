@@ -1,0 +1,32 @@
+                    List of relations
+     Schema      |        Name         | Type  |  Owner   
+-----------------+---------------------+-------+----------
+ project_team_08 | dim_counterparty    | table | postgres
+ project_team_08 | dim_currency        | table | postgres
+ project_team_08 | dim_date            | table | postgres
+ project_team_08 | dim_design          | table | postgres
+ project_team_08 | dim_location        | table | postgres
+ project_team_08 | dim_payment_type    | table | postgres
+ project_team_08 | dim_staff           | table | postgres
+ project_team_08 | dim_transaction     | table | postgres
+ project_team_08 | fact_payment        | table | postgres
+ project_team_08 | fact_purchase_order | table | postgres
+ project_team_08 | fact_sales_order    | table | postgres
+(11 rows)
+
+ purchase_record_id | purchase_order_id | created_date | created_time | last_updated_date | last_updated_time | staff_id | counterparty_id | item_code | item_quantity | item_unit_price | currency_id | agreed_delivery_date | agreed_payment_date | agreed_delivery_location_id 
+--------------------+-------------------+--------------+--------------+-------------------+-------------------+----------+-----------------+-----------+---------------+-----------------+-------------+----------------------+---------------------+-----------------------------
+(0 rows)
+
+ payment_record_id | payment_id | created_date | created_time | last_updated_date | last_updated_time | transaction_id | counterparty_id | payment_amount | currency_id | payment_type_id | paid | payment_date 
+-------------------+------------+--------------+--------------+-------------------+-------------------+----------------+-----------------+----------------+-------------+-----------------+------+--------------
+(0 rows)
+
+ sales_record_id | sales_order_id | created_date | created_time | last_updated_date | last_updated_time | sales_staff_id | counterparty_id | units_sold | unit_price | currency_id | design_id | agreed_payment_date | agreed_delivery_date | agreed_delivery_location_id 
+-----------------+----------------+--------------+--------------+-------------------+-------------------+----------------+-----------------+------------+------------+-------------+-----------+---------------------+----------------------+-----------------------------
+(0 rows)
+
+ staff_id | first_name | last_name | department_name | location | email_address 
+----------+------------+-----------+-----------------+----------+---------------
+(0 rows)
+
