@@ -1,6 +1,6 @@
-from src.extract.file_1 import something_to_do
+from src.extract.lambda_extract import lambda_extract
 import pytest
 
 
 def test_something():
-    assert something_to_do() == "team8"
+    assert lambda_extract() == "team8"
