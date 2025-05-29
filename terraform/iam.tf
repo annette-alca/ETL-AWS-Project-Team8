@@ -100,12 +100,8 @@ resource "aws_iam_role_policy_attachment" "state_machine_lambda_policy_attachmen
 data "aws_iam_policy_document" "step_function_invoke_policy" {
   statement {
     effect = "Allow"
-    actions = [
-      "states:StartExecution"
-    ]
-    resources = [
-      aws_sfn_state_machine.totes-state-machine.arn
-    ]
+    actions = ["states:StartExecution"]
+    resources = [aws_sfn_state_machine.totes-state-machine.arn]
   }
 }
 
@@ -139,9 +135,7 @@ data "aws_iam_policy_document" "cw_document" {
         "logs:DeleteLogDelivery",
         "logs:ListLogDeliveries"
     ]
-    resources = [
-        "*"
-    ]
+    resources = ["*"]
   }
 
   statement {
@@ -150,9 +144,7 @@ data "aws_iam_policy_document" "cw_document" {
         "logs:CreateLogStream",
         "logs:PutLogEvents",
     ]
-    resources = [
-        "${aws_cloudwatch_log_group.log_group_for_sfn.arn}"
-    ]
+    resources = ["${aws_cloudwatch_log_group.log_group_for_sfn.arn}"]
   }
 }
 

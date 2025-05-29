@@ -12,12 +12,8 @@ resource "aws_lambda_function" "test_lambda" {
   function_name = "lambda_extract"
   role          = aws_iam_role.iam_for_lambda.arn
   handler       = "lambda_extract.lambda_extract"
-
   source_code_hash = data.archive_file.lambda_extract.output_base64sha256
-
   runtime = "python3.13"
-
-
 }
 
 #lambda 2
