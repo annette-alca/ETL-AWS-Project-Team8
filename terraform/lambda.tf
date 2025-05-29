@@ -14,6 +14,18 @@ resource "aws_lambda_function" "test_lambda" {
   handler       = "lambda_extract.lambda_extract"
   source_code_hash = data.archive_file.lambda_extract.output_base64sha256
   runtime = "python3.13"
+
+  environment {
+    variables = {
+
+      BACKEND_S3 = "bucket-to-hold-tf-state-for-terraform"
+      INGESTION_S3 = aws_s3_bucket.ingestion_s3.bucket
+      DBUSER = "project_team_08"
+      DBNAME = "totesys"
+      HOST = "nc-data-eng-totesys-production.chpsczt8h1nu.eu-west-2.rds.amazonaws.com"
+      PORT = 5432
+    }
+  }
 }
 
 #lambda 2

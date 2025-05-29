@@ -8,9 +8,9 @@ import os
 from decimal import Decimal
 
 def lambda_extract(events, context):
-    db = create_conn()
     extract_client = boto3.client('s3')
-    bucket_name = get_bucket_name() 
+    db = create_conn(extract_client)
+    bucket_name = os.environ['INGESTION_S3']
     table_names = ["address", "counterparty", "currency", "department", 
                    "design", "payment", "payment_type", "purchase_order", 
                    "staff", "transaction"]
@@ -39,7 +39,8 @@ def get_last_timestamps(extract_client, bucket_name):
 def get_data(db, table_name, last_extract=None):
     query = f"SELECT * FROM {table_name}"
     if last_extract:
-        query+= f" WHERE last_updated > '{last_extract}'"     
+        query+= f" WHERE last_updated > '{last_extract}'"  
+  
     tab_data = db.run(query)
     extract_time = str(datetime.now())
     keys = [column["name"] for column in db.columns]
@@ -50,26 +51,33 @@ def get_data(db, table_name, last_extract=None):
 
 def save_to_s3(extract_client, bucket_name, new_dict_list, table_name, extract_time):
     if len(new_dict_list)==0:
+
         return
+
     date, time = extract_time.split()
     key = f"dev/{table_name}/{date}/{table_name}_{time}.json"    
     extract_client.put_object(Bucket=bucket_name, Body=json.dumps(new_dict_list, default=serialise_object, indent=2), 
             Key=key)
 
-def create_conn():
+def create_conn(extract_client):
     dotenv.load_dotenv()
     user = os.environ["DBUSER"]
     database = os.environ["DBNAME"]
     dbhost = os.environ["HOST"]
     dbport = os.environ["PORT"]
-    password = os.environ["DBPASSWORD"]
+    password = get_db_password(extract_client)
     return Connection(
         database=database, user=user, password=password, host=dbhost, port=dbport
     )
 
-def get_bucket_name():
-    dotenv.load_dotenv()
-    return os.environ['BUCKET']
+def get_db_password(extract_client):
+    key = 'secrets/secrets.json'
+    bucket = os.environ['BACKEND_S3'] # 'bucket-to-hold-tf-state-for-terraform'
+    pw_file = extract_client.get_object(Bucket=bucket, Key=key)
+    pw_dict = json.loads(pw_file["Body"].read().decode("utf-8"))
+
+    return pw_dict['totesys']
+
 
 def serialise_object(obj):
     if isinstance(obj, datetime):
