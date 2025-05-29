@@ -76,7 +76,6 @@ resource "aws_iam_role" "iam_for_state_machine" {
 }
 
 # Define step function full access to lambda policy document
-
 data "aws_iam_policy_document" "state_machine_policy_doc" {
   statement {
     effect = "Allow"
@@ -97,6 +96,27 @@ resource "aws_iam_role_policy_attachment" "state_machine_lambda_policy_attachmen
   policy_arn = aws_iam_policy.state_machine_lambda_policy.arn
   }
 
+# Define policy document to invoke step func 
+data "aws_iam_policy_document" "step_function_invoke_policy" {
+  statement {
+    effect = "Allow"
+    actions = ["states:StartExecution"]
+    resources = [aws_sfn_state_machine.totes-state-machine.arn]
+  }
+}
+
+# Create policy for invoke step func document 
+resource "aws_iam_policy" "step_function_invoke_policy" {
+  name = "step_function_invoke_policy"
+  policy = data.aws_iam_policy_document.step_function_invoke_policy.json
+}
+
+# Attach invoke step func policy to role 
+resource "aws_iam_role_policy_attachment" "attach_step_function_invoke_policy" {
+  role = aws_iam_role.iam_for_state_machine.name
+  policy_arn = aws_iam_policy.step_function_invoke_policy.arn
+}
+
 # ---------------------------
 # Cloudwatch function section 
 # ---------------------------
@@ -104,28 +124,33 @@ resource "aws_iam_role_policy_attachment" "state_machine_lambda_policy_attachmen
 # CloudWatch logs policy document
 data "aws_iam_policy_document" "cw_document" {
   statement {
+    effect = "Allow"
     actions = [
-        "logs:CreateLogGroup"
+        "logs:DescribeLogGroups",
+        "logs:DescribeResourcePolicies",
+        "logs:PutResourcePolicy",
+        "logs:CreateLogDelivery",
+        "logs:GetLogDelivery",
+        "logs:UpdateLogDelivery",
+        "logs:DeleteLogDelivery",
+        "logs:ListLogDeliveries"
     ]
-    resources = [
-        "arn:aws:logs:*:*:*"
-    ]
+    resources = ["*"]
   }
 
   statement {
+    effect = "Allow"
      actions = [
         "logs:CreateLogStream",
         "logs:PutLogEvents",
     ]
-    resources = [
-        "arn:aws:logs:*:*:*"
-    ]
+    resources = ["${aws_cloudwatch_log_group.log_group_for_sfn.arn}"]
   }
 }
 
 # CloudWatch log policy
 resource "aws_iam_policy" "cw_policy" {
-  name = "cloudwatch_policy"
+  name = "cw_policy"
   policy = data.aws_iam_policy_document.cw_document.json
 }
 
