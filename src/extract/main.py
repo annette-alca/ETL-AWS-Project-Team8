@@ -1,12 +1,12 @@
 import pg8000
 import json
-# import boto3
+import boto3
 import os
+import time
 
-# from pg8000.native import literal
 from src.extract.utils import *
 from datetime import datetime
-from pprint import pprint
+# from pprint import pprint
 
 
 def lambda_extract(events, context):
@@ -14,23 +14,25 @@ def lambda_extract(events, context):
     table_names = ["address", "counterparty", "currency", "department", 
                    "design", "payment", "payment_type", "purchase_order", 
                    "staff", "transaction"]
-    last_timestamp_dict = events
+    try:
+        with open("tempdata/timestamps.json","r", encoding="utf-8") as last_extraction:
+            last_timestamp_dict = json.load(last_extraction)
+    except FileNotFoundError:
+        last_timestamp_dict = {}
     new_timestamp_dict = {}
+    extract_client = boto3.client('s3')
+    bucket_name = get_bucket_name() 
     for table_name in table_names:
-        if not events:
-            last_extract = None
-        else:
-            last_extract = last_timestamp_dict[table_name]
+        last_extract = last_timestamp_dict.get(table_name, None)
         new_dict_list, extract_time = get_data(db, table_name, last_extract)
         new_timestamp_dict[table_name]= extract_time
-        try:
-            os.mkdir(f"tempdata/{table_name}")
-            os.mkdir(f"tempdata/{table_name}/2025-05-28")
-        except:
-            pass
-        save_to_tempdata(new_dict_list, extract_time, table_name)
+        save_to_s3(extract_client, bucket_name, new_dict_list, table_name, extract_time)
+
     db.close()
-    return new_timestamp_dict
+    with open("tempdata/timestamps.json", "w", encoding="utf-8") as f:
+        json.dump(new_timestamp_dict, f, default=serialise_object, indent=2)
+    return {'message':'completed ingestion', 'timestamp':new_timestamp_dict['transaction']}
+    
 
 def get_data(db, table_name, last_extract=None):
     query = f"SELECT * FROM {table_name}"
@@ -44,17 +46,26 @@ def get_data(db, table_name, last_extract=None):
     ]
     return new_dict_list, extract_time
 
+def save_to_s3(extract_client, bucket_name, new_dict_list, table_name, extract_time):
+    if len(new_dict_list)==0:
+        return
+    date, time = extract_time.split()
+    key = f"dev/{table_name}/{date}/{table_name}_{time}.json"    
+    extract_client.put_object(Bucket=bucket_name, Body=json.dumps(new_dict_list, default=serialise_object, indent=2), 
+            Key=key)
+
 def save_to_tempdata(dict_list, extract_time, table_name):
+    if len(dict_list)==0:
+        return
     date, time = extract_time.split()
     path = f"tempdata/{table_name}/{date}/{table_name}_{time}.json"
     with open(path, "w", encoding="utf-8") as f:
         json.dump(dict_list, f, default=serialise_object, indent=2)
 
 if __name__ == "__main__":
-    # db = create_conn()
-    # pprint(get_data(db, "transaction", "2025-05-27"))
-   new_timestamp_dict=lambda_extract(None, None)
-   new_timestamp_dict2=lambda_extract(new_timestamp_dict, None)
+   print(lambda_extract(None, None))
+   time.sleep(15)
+   print(lambda_extract(None, None))
 
 
 

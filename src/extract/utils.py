@@ -17,6 +17,9 @@ def create_conn():
         database=database, user=user, password=password, host=dbhost, port=dbport
     )
 
+def get_bucket_name():
+    dotenv.load_dotenv()
+    return os.environ['BUCKET']
 
 def serialise_object(obj):
     if isinstance(obj, datetime):
