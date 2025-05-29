@@ -1,12 +1,11 @@
-import pg8000
 import json
 import boto3
-import os
 import time
-from src.extract.utils import *
 from datetime import datetime
-# from pprint import pprint
-
+from pg8000.native import Connection
+import dotenv
+import os
+from decimal import Decimal
 
 def lambda_extract(events, context):
     db = create_conn()
@@ -56,6 +55,28 @@ def save_to_s3(extract_client, bucket_name, new_dict_list, table_name, extract_t
     key = f"dev/{table_name}/{date}/{table_name}_{time}.json"    
     extract_client.put_object(Bucket=bucket_name, Body=json.dumps(new_dict_list, default=serialise_object, indent=2), 
             Key=key)
+
+def create_conn():
+    dotenv.load_dotenv()
+    user = os.environ["DBUSER"]
+    database = os.environ["DBNAME"]
+    dbhost = os.environ["HOST"]
+    dbport = os.environ["PORT"]
+    password = os.environ["DBPASSWORD"]
+    return Connection(
+        database=database, user=user, password=password, host=dbhost, port=dbport
+    )
+
+def get_bucket_name():
+    dotenv.load_dotenv()
+    return os.environ['BUCKET']
+
+def serialise_object(obj):
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    elif isinstance(obj, Decimal):
+        return float(obj)
+    raise TypeError("Type not serialisable")
 
 
 if __name__ == "__main__":
