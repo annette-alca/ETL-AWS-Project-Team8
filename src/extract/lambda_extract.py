@@ -5,6 +5,7 @@ from pg8000.native import Connection
 import os
 from decimal import Decimal
 import dotenv
+from pg8000.exceptions import DatabaseError
 
 def lambda_extract(events, context):
     extract_client = boto3.client('s3')
@@ -42,14 +43,16 @@ def get_data(db, table_name, last_extract=None):
     query = f"SELECT * FROM {table_name}"
     if last_extract:
         query+= f" WHERE last_updated > '{last_extract}'"  
-  
-    tab_data = db.run(query)
-    extract_time = str(datetime.now())
-    keys = [column["name"] for column in db.columns]
-    new_dict_list = [
-        {keys[i]: single_data[i] for i in range(len(keys))} for single_data in tab_data
-    ]
-    return new_dict_list, extract_time
+    try:
+        tab_data = db.run(query)
+        extract_time = str(datetime.now())
+        keys = [column["name"] for column in db.columns]
+        new_dict_list = [
+            {keys[i]: single_data[i] for i in range(len(keys))} for single_data in tab_data
+        ]
+        return new_dict_list, extract_time
+    except DatabaseError:
+        return [], last_extract
 
 def save_to_s3(extract_client, bucket_name, new_dict_list, table_name, extract_time):
     if len(new_dict_list)==0:
