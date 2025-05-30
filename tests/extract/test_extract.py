@@ -1,4 +1,4 @@
-from src.extract.main import *
+from src.extract.lambda_extract import *
 import pytest 
 import boto3
 
