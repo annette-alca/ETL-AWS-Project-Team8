@@ -1,3 +1,18 @@
+# Extract Lambda dependency layer
+data "archive_file" "layer" {
+  type             = "zip"
+  output_file_mode = "0666"
+  source_dir       = "${path.module}/../layer/"
+  output_path      = "${path.module}/../layer.zip"
+}
+
+resource "aws_lambda_layer_version" "extract_dependencies_layer" {
+  layer_name          = "extract_dependencies_layer"
+  compatible_runtimes = ["python3.13"]
+  filename            = data.archive_file.layer.output_path
+}
+
+
 # Extract lambda
 data "archive_file" "lambda_extract" {
   type        = "zip"
@@ -14,6 +29,21 @@ resource "aws_lambda_function" "test_lambda" {
   handler       = "lambda_extract.lambda_extract"
   source_code_hash = data.archive_file.lambda_extract.output_base64sha256
   runtime = "python3.13"
+  layers = [aws_lambda_layer_version.extract_dependencies_layer.arn]
+  timeout = 30
+
+
+  environment {
+    variables = {
+
+      BACKEND_S3 = "bucket-to-hold-tf-state-for-terraform"
+      INGESTION_S3 = aws_s3_bucket.ingestion_s3.bucket
+      DBUSER = "project_team_08"
+      DBNAME = "totesys"
+      HOST = "nc-data-eng-totesys-production.chpsczt8h1nu.eu-west-2.rds.amazonaws.com"
+      PORT = 5432
+    }
+  }
 }
 
 #lambda 2

@@ -3,8 +3,6 @@ boto3
 moto 
 pg8000
 pandas
-pymongo 
-pydantic 
 bandit 
 pip-audit
 flake8

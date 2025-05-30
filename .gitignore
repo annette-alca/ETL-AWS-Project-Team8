@@ -1,11 +1,12 @@
 .env
 venv
-*/*/__pycache__
+*__pycache__
+__pycache__
 creds.txt
 venv
 **/.terraform*
 *.tfstate*
 query_helper*
-*/*/__pycache__
 .coverage
-
+tempdata
+*.DS_Store
