@@ -13,13 +13,13 @@ def db():
     yield db
     db.close()
 
-@pytest.fixture(scope='class')
-def aws_credentials():
-    os.environ["aws_access_key_id"]="Test"
-    os.environ["aws_secret_access_key"]="test"
-    os.environ["aws_session_token"]="test"
-    os.environ["aws_security_token"]="test"
-    os.environ["aws_region"]="eu-west-2"
+# @pytest.fixture(scope='class')
+# def aws_credentials():
+#     os.environ["aws_access_key_id"]="Test"
+#     os.environ["aws_secret_access_key"]="test"
+#     os.environ["aws_session_token"]="test"
+#     os.environ["aws_security_token"]="test"
+#     os.environ["aws_region"]="eu-west-2"
 
 @pytest.fixture
 def s3_client():
