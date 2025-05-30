@@ -165,3 +165,22 @@ resource "aws_iam_role_policy_attachment" "state_machine_cw_policy_attachment" {
   role = aws_iam_role.iam_for_state_machine.name
   policy_arn = aws_iam_policy.cw_policy.arn
 }
+
+# SNS Topic Policy 
+resource "aws_sns_topic_policy" "lambda_extract_alerts_policy" {
+  arn    = aws_sns_topic.lambda_extract_alerts.arn
+  policy = jsonencode({
+    Version = "2012-10-17",
+      Statement: [
+      {
+        Sid: "AllowCloudWatchToPublish",
+        Effect: "Allow",
+        Principal: {
+          Service: "cloudwatch.amazonaws.com"
+        },
+        Action: "SNS:Publish",
+        Resource: aws_sns_topic.lambda_extract_alerts.arn
+      }
+    ]
+  })
+}
