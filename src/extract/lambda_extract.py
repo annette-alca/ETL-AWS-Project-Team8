@@ -4,7 +4,7 @@ from datetime import datetime
 from pg8000.native import Connection
 import os
 from decimal import Decimal
-import dotenv
+# import dotenv
 from pg8000.exceptions import DatabaseError
 
 def lambda_extract(events, context):
@@ -64,13 +64,13 @@ def save_to_s3(extract_client, bucket_name, new_dict_list, table_name, extract_t
     return key
 
 def create_conn(extract_client):
-    dotenv.load_dotenv()
+    # dotenv.load_dotenv()
     user = os.environ["DBUSER"]
     database = os.environ["DBNAME"]
     dbhost = os.environ["HOST"]
     dbport = os.environ["PORT"]
-    password = os.environ["DBPASSWORD"]
-    # password = get_db_password(extract_client)
+    # password = os.environ["DBPASSWORD"]
+    password = get_db_password(extract_client)
     return Connection(
         database=database, user=user, password=password, host=dbhost, port=dbport
     )

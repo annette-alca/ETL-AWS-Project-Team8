@@ -4,8 +4,6 @@ import boto3
 from moto import mock_aws
 from unittest.mock import Mock, patch
 
-
-
 @pytest.fixture(scope="module")
 def db():
     extract_client = boto3.client('s3')
