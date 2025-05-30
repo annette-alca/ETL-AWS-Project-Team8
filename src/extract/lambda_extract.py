@@ -1,10 +1,10 @@
 import json
 import boto3
-from datetime import datetime
+from datetime import datetime, UTC
 from pg8000.native import Connection
 import os
 from decimal import Decimal
-# import dotenv
+# import dotenv # for local implementation
 from pg8000.exceptions import DatabaseError
 
 def lambda_extract(events, context):
@@ -45,7 +45,8 @@ def get_data(db, table_name, last_extract=None):
         query+= f" WHERE last_updated > '{last_extract}'"  
     try:
         tab_data = db.run(query)
-        extract_time = str(datetime.now())
+        extract_time = datetime.now(UTC).isoformat()
+        extract_time = extract_time.replace('+00:00','')
         keys = [column["name"] for column in db.columns]
         new_dict_list = [
             {keys[i]: single_data[i] for i in range(len(keys))} for single_data in tab_data
@@ -55,16 +56,19 @@ def get_data(db, table_name, last_extract=None):
         return [], last_extract
 
 def save_to_s3(extract_client, bucket_name, new_dict_list, table_name, extract_time):
+
+    date, time = extract_time.split('T')
+    key = f"dev/{table_name}/{date}/{table_name}_{time}.json"
+    print(key)    
+
     if len(new_dict_list)==0:
         return
-    date, time = extract_time.split()
-    key = f"dev/{table_name}/{date}/{table_name}_{time}.json"    
     extract_client.put_object(Bucket=bucket_name, Body=json.dumps(new_dict_list, default=serialise_object, indent=2), 
             Key=key)
     return key
 
 def create_conn(extract_client):
-    # dotenv.load_dotenv()
+    # dotenv.load_dotenv()  # for local implementation
     user = os.environ["DBUSER"]
     database = os.environ["DBNAME"]
     dbhost = os.environ["HOST"]
@@ -79,7 +83,6 @@ def get_db_password(extract_client):
     bucket = os.environ['BACKEND_S3'] # 'bucket-to-hold-tf-state-for-terraform'
     pw_file = extract_client.get_object(Bucket=bucket, Key=key)
     pw_dict = json.loads(pw_file["Body"].read().decode("utf-8"))
-
     return pw_dict['totesys']
 
 
