@@ -69,7 +69,8 @@ def create_conn(extract_client):
     database = os.environ["DBNAME"]
     dbhost = os.environ["HOST"]
     dbport = os.environ["PORT"]
-    password = get_db_password(extract_client)
+    password = os.environ["DBPASSWORD"]
+    # password = get_db_password(extract_client)
     return Connection(
         database=database, user=user, password=password, host=dbhost, port=dbport
     )
