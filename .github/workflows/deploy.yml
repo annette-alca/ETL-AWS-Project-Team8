@@ -4,8 +4,22 @@ on:
     branches:
       - main
 jobs:
+  setup-aws-credentials:
+    name: setup-aws-credentials
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4.1.0
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID}}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+  
   run-tests:
     name: run-tests
+    needs: setup-aws-credentials
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
@@ -18,18 +32,23 @@ jobs:
         run: make requirements
       - name: Run checks
         run: make run-checks
-
-  setup-aws-credentials:
-    name: setup-aws-credentials
-    needs: run-tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4.1.0
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID}}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+        env: 
+            DBUSER: ${{ secrets.DBUSER}}
+            DBPASSWORD: ${{ secrets.DBPASSWORD}}
+            DBNAME: ${{ secrets.DBNAME}}
+            HOST: ${{ secrets.HOST}}
+            PORT: ${{ secrets.PORT}}
+            INGESTION_S3: 'team-08-ingestion-20250528081548341900000001'
+            BACKEND_S3: 'bucket-to-hold-tf-state-for-terraform'
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID}}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region: ${{ secrets.AWS_REGION }}
+           
+        
+    
+     
           
+        
+
+
+
