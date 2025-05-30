@@ -4,6 +4,7 @@ from datetime import datetime
 from pg8000.native import Connection
 import os
 from decimal import Decimal
+import dotenv
 
 def lambda_extract(events, context):
     extract_client = boto3.client('s3')
@@ -14,16 +15,19 @@ def lambda_extract(events, context):
                    "staff", "transaction"]
     last_timestamp_dict, timestamp_key = get_last_timestamps(extract_client, bucket_name)
     new_timestamp_dict = {}
+    new_keys = []
     for table_name in table_names:
         last_extract = last_timestamp_dict.get(table_name, None)
         new_dict_list, extract_time = get_data(db, table_name, last_extract)
         new_timestamp_dict[table_name]= extract_time
-        save_to_s3(extract_client, bucket_name, new_dict_list, table_name, extract_time)
-
+        any_key = save_to_s3(extract_client, bucket_name, new_dict_list, table_name, extract_time)
+        if any_key:
+            new_keys.append(any_key)
     db.close()
     extract_client.put_object(Bucket=bucket_name, Body=json.dumps(new_timestamp_dict, default=serialise_object, indent=2), 
             Key=timestamp_key)
-    return {'message':'completed ingestion', 'timestamp':new_timestamp_dict['transaction']}
+    return {'message':'completed ingestion', 'timestamp':new_timestamp_dict['transaction'],
+            'total_new_files':len(new_keys), 'new_keys':new_keys}
     
 def get_last_timestamps(extract_client, bucket_name):
     key = "dev/extraction_times/timestamps.json"
@@ -49,16 +53,15 @@ def get_data(db, table_name, last_extract=None):
 
 def save_to_s3(extract_client, bucket_name, new_dict_list, table_name, extract_time):
     if len(new_dict_list)==0:
-
         return
-
     date, time = extract_time.split()
     key = f"dev/{table_name}/{date}/{table_name}_{time}.json"    
     extract_client.put_object(Bucket=bucket_name, Body=json.dumps(new_dict_list, default=serialise_object, indent=2), 
             Key=key)
+    return key
 
 def create_conn(extract_client):
-    # dotenv.load_dotenv()
+    dotenv.load_dotenv()
     user = os.environ["DBUSER"]
     database = os.environ["DBNAME"]
     dbhost = os.environ["HOST"]
@@ -85,8 +88,8 @@ def serialise_object(obj):
     raise TypeError("Type not serialisable")
 
 
-# if __name__ == "__main__":
-#    print(lambda_extract(None, None))
+if __name__ == "__main__":
+   print(lambda_extract(None, None))
 #    time.sleep(15)
 #    print(lambda_extract(None, None))
 
