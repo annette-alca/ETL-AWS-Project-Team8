@@ -32,5 +32,20 @@ jobs:
         run: make requirements
       - name: Run checks
         run: make run-checks
+        env: 
+            DBUSER: ${{ secrets.DBUSER}}
+            DBPASSWORD: ${{ secrets.DBPASSWORD}}
+            DBNAME: ${{ secrets.DBNAME}}
+            HOST: ${{ secrets.HOST}}
+            PORT: ${{ secrets.PORT}}
+            INGESTION_S3: 'team-08-ingestion-20250528081548341900000001'
+            BACKEND_S3: 'bucket-to-hold-tf-state-for-terraform'
+           
+        
+    
+     
+          
+        
 
-  
+
+
