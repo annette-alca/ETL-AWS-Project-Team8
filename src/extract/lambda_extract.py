@@ -28,7 +28,7 @@ def lambda_extract(events, context):
     db = create_conn(extract_client)
     bucket_name = os.environ['INGESTION_S3']
     table_names = ["address", "counterparty", "currency", "department", 
-                   "design", "payment", "payment_type", "purchase_order", 
+                   "design", "payment", "payment_type", "purchase_order", "sales_order",
                    "staff", "transaction"]
     last_timestamp_dict, timestamp_key = get_last_timestamps(extract_client, bucket_name)
     new_timestamp_dict = {}
@@ -139,7 +139,7 @@ def create_conn(extract_client):
         Connection (Object): pg8000.native object with environment credentials
     """
 
-    # dotenv.load_dotenv()
+    dotenv.load_dotenv()
     user = os.environ["DBUSER"]
     database = os.environ["DBNAME"]
     dbhost = os.environ["HOST"]
@@ -188,8 +188,8 @@ def serialise_object(obj):
     raise TypeError("Type not serialisable")
 
 
-# if __name__ == "__main__":
-#    print(lambda_extract(None, None))
+if __name__ == "__main__":
+   print(lambda_extract(None, None))
 #    time.sleep(15)
 #    print(lambda_extract(None, None))
 
