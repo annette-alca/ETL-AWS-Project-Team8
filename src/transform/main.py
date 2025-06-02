@@ -6,6 +6,7 @@ from io import StringIO
 import json
 import os
 import dotenv # for local implementation
+from decimal import Decimal
 
 def lambda_transform(events, context):
     # extracting data from s3 and converting to df
@@ -88,13 +89,13 @@ def append_json_raw_tables(s3_client, ingestion_bucket, new_json_key, processed_
         try:
             main_json = s3_client.get_object(Bucket=processed_bucket, Key =main_json_key)
             main_df =  pd.read_json(StringIO(main_json["Body"].read().decode("utf-8")))
+            merged_df = pd.concat([main_df, new_df], ignore_index=True)
         except s3_client.exceptions.NoSuchKey:
-            main_df = pd.DataFrame(columns=new_df.columns)
-
-        merged_df = pd.concat([main_df, new_df], ignore_index=True)
+            merged_df = new_df.copy()
 
         json_buffer = StringIO()
-        merged_df.to_json(json_buffer, indent=2, orient="index")
+
+        merged_df.to_json(json_buffer, indent=2, orient="index", default_handler=serialise_object)
 
         s3_client.put_object(Bucket=processed_bucket, Body=json_buffer.getvalue(), 
             Key=main_json_key)
@@ -107,6 +108,25 @@ def backlog_transform_to_parquet():
                     "payment_type":["dim_date"], 
                     "purchase_order":["fact_sales_order","dim_date"], 
                     "transaction":["fact_sales_order", "dim_date"]}
+    
+def serialise_object(obj):
+    """
+    Utility function, specifies alternate serialisation methods or passes TypeErrors back to the base class
+
+    Args:
+        obj (datetime | Decimal): 
+
+    Raises:
+        TypeError: error raised if object Type is not string or decimal
+
+    Returns:
+        obj (timestamp | float) : type dependent on Arg type
+    """
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    elif isinstance(obj, Decimal):
+        return float(obj)
+    raise TypeError("Type not serialisable")
 
     
 events = {'message': 'completed ingestion', 'timestamp': '2025-06-02T11:12:23.510861', 'total_new_files': 11, 'new_keys': ['dev/address/2025-06-02/address_11:12:19.521510.json', 'dev/counterparty/2025-06-02/counterparty_11:12:19.565814.json', 'dev/currency/2025-06-02/currency_11:12:19.606618.json', 'dev/department/2025-06-02/department_11:12:19.646378.json', 'dev/design/2025-06-02/design_11:12:19.715402.json', 'dev/payment/2025-06-02/payment_11:12:20.574726.json', 'dev/payment_type/2025-06-02/payment_type_11:12:21.269205.json', 'dev/purchase_order/2025-06-02/purchase_order_11:12:21.554361.json', 'dev/sales_order/2025-06-02/sales_order_11:12:22.285781.json', 'dev/staff/2025-06-02/staff_11:12:22.779187.json', 'dev/transaction/2025-06-02/transaction_11:12:23.510861.json']}
