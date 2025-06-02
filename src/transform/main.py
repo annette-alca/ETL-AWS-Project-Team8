@@ -47,9 +47,6 @@ def lambda_transform(events, context):
     # #method 1 - creates dim_staff table using SQL query/duckdb
     # dim_staff = duckdb.sql("SELECT staff_df.first_name, staff_df.last_name, department_df.department_name, department_df.location, staff_df.email_address FROM staff_df JOIN department_df ON department_df.department_id = staff_df.department_id").df()
     
-    # #method 2 creates dim_staff table using pandas 
-    # dim_staff = pd.merge(staff_df, department_df, how= "inner", on= "department_id")
-    # dim_staff = dim_staff.loc[:,["staff_id", "first_name", "last_name", "department_name", "location", "email_address"]]
 
     # dim_location = address_df.loc[:,["address_id", "address_line_1", "address_line_2", "district", "city", "postal_code", "country", "phone"]]
     
@@ -73,7 +70,11 @@ def mvp_transform_to_parquet(table_name, new_df):
                     "sales_order":["fact_sales_order", "dim_date"],
                    "staff":["dim_staff"], 
                 }
-   
+    # #method 2 creates dim_staff table using pandas 
+    # dim_staff = pd.merge(staff_df, department_df, how= "inner", on= "department_id")
+    # dim_staff = dim_staff.loc[:,["staff_id", "first_name", "last_name", "department_name", "location", "email_address"]]
+    
+
     #converts the dataframe to a parquet file and saves to the specified file path
     # dim_staff.to_parquet(f"tempdata/dim_staff/{date_time}.parquet")
     # dim_location.to_parquet(f"tempdata/dim_location/{date_time}.parquet")
