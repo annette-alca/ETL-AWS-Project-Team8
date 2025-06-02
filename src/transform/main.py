@@ -78,6 +78,32 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
                 "counterparty_legal_postal_code", "counterparty_legal_country", "counterparty_legal_phone_number"
             ]
             return "dim_counterparty", dim_counterparty
+        case "design":
+            dim_design = new_df.loc[:,["design_id", "design_name", "file_location", "file_name"]]
+            return "dim_design", dim_design
+        case "currency":
+            dim_currency = new_df.loc[:,["currency_id", "currency_code"]]
+            currency_dict = {"GBP":"British pound", "USD": "US dollar", "EUR":"Euro","CHF":"Swiss franc"}
+            for row in range(len(new_df)):
+                new_df.loc[row,"currency_name"] = currency_dict[new_df.loc[row,"currency_code"]]
+            return "dim_currency", dim_currency
+        
+        case "sales_order":
+            for row in range(new_df):
+                created_date, created_time = new_df.loc[row,"created_at"].split("T")
+                lastup_date, lastup_time = new_df.loc[row,"last_updated"].split("T")
+                new_df.loc[row,"created_date"] = created_date
+                new_df.loc[row,"created_time"] = created_time
+                new_df.loc[row,"last_updated_date"] = lastup_date
+                new_df.loc[row,"last_updated_time"] = lastup_time
+            fact_sales_order = new_df.loc[:,["sales_order_id", "created_date", "created_time",
+                            "last_updated_date", "last_updated_time", "sales_staff_id",
+                            "counterparty_id", "units_sold", "unit_price", "currency_id"
+                            "design_id", "agreed_payment_date", "agreed_delivery_date"
+                            "agreed_delivery_location_id"]]
+            return "fact_sales_order", fact_sales_order
+
+
 
 def append_json_raw_tables(s3_client, ingestion_bucket, new_json_key, processed_bucket):
         table_name = new_json_key.split('/')[1]
@@ -129,5 +155,7 @@ def serialise_object(obj):
     raise TypeError("Type not serialisable")
 
     
-events = {'message': 'completed ingestion', 'timestamp': '2025-06-02T11:12:23.510861', 'total_new_files': 1, 'new_keys': ['dev/counterparty/2025-06-02/counterparty_11:12:19.565814.json']}
+events = {'message': 'completed ingestion', 'timestamp': '2025-06-02T16:12:23.510861', 
+          'total_new_files': 1, 
+          'new_keys': ['dev/currency/2025-06-02/currency_11:12:19.606618.json']}
 lambda_transform(events, None)
