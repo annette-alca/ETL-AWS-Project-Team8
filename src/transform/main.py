@@ -20,8 +20,9 @@ def lambda_transform(events, context):
     ingestion_bucket = os.environ["INGESTION_S3"]
     processed_bucket = os.environ["PROCESSED_S3"]
     for new_key in events["new_keys"]:
-        new_df = append_json_raw_tables(s3_client, ingestion_bucket, new_key, processed_bucket)
-        print(new_df)
+        table_name, new_df = append_json_raw_tables(s3_client, ingestion_bucket, new_key, processed_bucket)
+        
+
     #     response = s3_client.get_object(
     #         Bucket="team-08-ingestion-20250528081548341900000001", 
     #         Key=file
@@ -51,10 +52,6 @@ def lambda_transform(events, context):
 
     # dim_location = address_df.loc[:,["address_id", "address_line_1", "address_line_2", "district", "city", "postal_code", "country", "phone"]]
     
-    # #converts the dataframe to a parquet file and saves to the specified file path
-    # dim_staff.to_parquet(f"tempdata/dim_staff/{date_time}.parquet")
-    # dim_location.to_parquet(f"tempdata/dim_location/{date_time}.parquet")
-    # #####
 
     # dim_location.to_csv(f"tempdata/dim_location/{date_time}.txt")
 
@@ -68,40 +65,41 @@ def lambda_transform(events, context):
 # how to name the df correctly
 # what happens if we dont have enough data to complete a table from the df updated - use old df? 
 
-def mvp_transform_to_parquet():
+def mvp_transform_to_parquet(table_name, new_df):
    table_names = {"address":["dim_location"], "counterparty":["dim_counterparty"], 
                   "currency":["dim_currency"], "department":["dim_staff"], 
                    "design":["dim_design"], 
                     "sales_order":["fact_sales_order", "dim_date"],
                    "staff":["dim_staff"], 
-}
+                }
+   
+    #converts the dataframe to a parquet file and saves to the specified file path
+    # dim_staff.to_parquet(f"tempdata/dim_staff/{date_time}.parquet")
+    # dim_location.to_parquet(f"tempdata/dim_location/{date_time}.parquet")
+   
    
 def append_json_raw_tables(s3_client, ingestion_bucket, new_json_key, processed_bucket):
         table_name = new_json_key.split('/')[1]
         main_json_key = f"raw_data/{table_name}_all.json"
+        
+        new_json = s3_client.get_object(Bucket=ingestion_bucket, Key=new_json_key)
+        new_df = pd.read_json(StringIO(new_json["Body"].read().decode("utf-8")))
+
         try:
             main_json = s3_client.get_object(Bucket=processed_bucket, Key =main_json_key)
             main_df =  pd.read_json(StringIO(main_json["Body"].read().decode("utf-8")))
         except s3_client.exceptions.NoSuchKey:
-            main_df = pd.DataFrame()
-
-        new_json = s3_client.get_object(Bucket=ingestion_bucket, Key=new_json_key)
-        new_df = pd.read_json(StringIO(new_json["Body"].read().decode("utf-8")))
+            main_df = pd.DataFrame(columns=new_df.columns)
 
         merged_df = pd.concat([main_df, new_df], ignore_index=True)
 
-        s3_client.put_object(Bucket=processed_bucket, Body=merged_df.to_json(merged_df, indent=2), 
+        json_buffer = StringIO()
+        merged_df.to_json(json_buffer, indent=2, orient="index")
+
+        s3_client.put_object(Bucket=processed_bucket, Body=json_buffer.getvalue(), 
             Key=main_json_key)
         
-        return new_df
-
-
-        
-
-
-
-
-        
+        return (table_name, new_df)
 
 
 def backlog_transform_to_parquet():
@@ -111,6 +109,5 @@ def backlog_transform_to_parquet():
                     "transaction":["fact_sales_order", "dim_date"]}
 
     
-
-lambda_transform({'message':'completed ingestion', 'timestamp':None,
-            'total_new_files':2, 'new_keys':["dev/payment/2025-05-30/payment_14:54:53.938730.json", "dev/purchase_order/2025-05-30/purchase_order_14:54:54.041603.json", "dev/transaction/2025-05-30/transaction_14:54:54.101691.json"]}, None)
+events = {'message': 'completed ingestion', 'timestamp': '2025-06-02T11:12:23.510861', 'total_new_files': 11, 'new_keys': ['dev/address/2025-06-02/address_11:12:19.521510.json', 'dev/counterparty/2025-06-02/counterparty_11:12:19.565814.json', 'dev/currency/2025-06-02/currency_11:12:19.606618.json', 'dev/department/2025-06-02/department_11:12:19.646378.json', 'dev/design/2025-06-02/design_11:12:19.715402.json', 'dev/payment/2025-06-02/payment_11:12:20.574726.json', 'dev/payment_type/2025-06-02/payment_type_11:12:21.269205.json', 'dev/purchase_order/2025-06-02/purchase_order_11:12:21.554361.json', 'dev/sales_order/2025-06-02/sales_order_11:12:22.285781.json', 'dev/staff/2025-06-02/staff_11:12:22.779187.json', 'dev/transaction/2025-06-02/transaction_11:12:23.510861.json']}
+lambda_transform(events, None)

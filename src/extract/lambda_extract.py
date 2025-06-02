@@ -4,7 +4,7 @@ from datetime import datetime, UTC
 from pg8000.native import Connection
 import os
 from decimal import Decimal
-# import dotenv # for local implementation
+import dotenv # for local implementation
 from pg8000.exceptions import DatabaseError
 
 def lambda_extract(events, context):
