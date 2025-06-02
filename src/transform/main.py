@@ -2,11 +2,24 @@ import boto3
 import pandas as pd 
 import duckdb 
 from datetime import datetime
+from io import StringIO
+import json
 
-
-
-
-def dim_staff():
+def lambda_transform(extract_dict):
+    # extracting data from s3 and converting to df
+    s3_client = boto3.client("s3")
+    if extract_dict["total_new_files"] > 0:
+        df_list = []
+        for index, file in enumerate(extract_dict["new_keys"]):
+            response = s3_client.get_object(
+                Bucket="team-08-ingestion-20250528081548341900000001", 
+                Key=file
+            )
+            body = response["Body"].read().decode("utf-8")
+            df_list.append(pd.read_json(StringIO(body)))
+        print(df_list)
+    
+    
     date_time = str(datetime.now())
 
     file_path_staff = "tempdata/staff/2025-05-28/staff_12:25:18.184743.json"
@@ -16,7 +29,6 @@ def dim_staff():
     staff_df = pd.read_json(file_path_staff)
     department_df = pd.read_json(file_path_department)
     address_df = pd.read_json(file_path_address)
-
 
     
     #method 1 - creates dim_staff table using SQL query/duckdb
@@ -42,9 +54,8 @@ def dim_staff():
     
     
     
-# how should we create tables with multiple files?
-# for input are we given files or do we get it ourselves from s3 bucket using boto3? 
-# which files do we select from boto3
-# one function for creating each table / one function to create all?
+# how to name the df correctly
+# what happens if we dont have enough data to complete a table from the df updated - use old df? 
 
-dim_staff()
+lambda_transform({'message':'completed ingestion', 'timestamp':None,
+            'total_new_files':2, 'new_keys':["dev/payment/2025-05-30/payment_14:54:53.938730.json", "dev/purchase_order/2025-05-30/purchase_order_14:54:54.041603.json", "dev/transaction/2025-05-30/transaction_14:54:54.101691.json"]})
