@@ -3,6 +3,7 @@ import pytest
 import boto3
 from moto import mock_aws
 from unittest.mock import Mock, patch
+import dotenv
 
 @pytest.fixture(scope="module")
 def db():
@@ -33,6 +34,13 @@ def s3_client_with_bucket(s3_client):
     )
     return s3_client, bucket_name
 
+@pytest.fixture()
+def db(s3_client):
+    dotenv.load_dotenv()
+    mock_password = Mock(return_value=os.environ["DBPASSWORD"])
+    with patch('src.extract.lambda_extract.get_db_password', mock_password):
+        return create_conn(s3_client)
+
 def test_get_data_from_database_first_ingestion(db):
     new_dict_list, extract_time = get_data(db, "department")
     assert isinstance(new_dict_list, list)
@@ -56,17 +64,16 @@ def test_get_data_handles_DataBaseError(db):
 
 @pytest.mark.skip
 def test_transactions_db_for_updates(db):
-    new_dict_list, extract_time = get_data(db, "transaction", "2025-05-29 14:01")
-    print(f'New dict list: {new_dict_list}  <<<<<<<<<<<<<<<<<')
+    new_dict_list, extract_time = get_data(db, "transaction", "2025-05-29T14:01")
     assert isinstance(new_dict_list, list)
     assert len(new_dict_list) == 0
 
 def test_save_to_s3_when_sql_table_has_values(s3_client_with_bucket):
     extract_client, bucket_name = s3_client_with_bucket
-    extract_time = "2025-05-30 10:33.4323"
+    extract_time = "2025-05-30T10:33.4323"
     new_dict_list = [{'fake':1}, {'fake':2}]
     table_name = 'fake_data'
-    date, time = extract_time.split()
+    date, time = extract_time.split('T')
     expected_key = f"dev/{table_name}/{date}/{table_name}_{time}.json"
     result = save_to_s3(extract_client, bucket_name, new_dict_list, table_name, extract_time)
     assert result == expected_key
@@ -76,7 +83,7 @@ def test_save_to_s3_when_sql_table_has_values(s3_client_with_bucket):
 
 def test_save_to_s3_when_sql_table_is_empty(s3_client_with_bucket):
     extract_client, bucket_name = s3_client_with_bucket
-    extract_time = "2025-05-30 10:33.4323"
+    extract_time = "2025-05-30T10:33.4323"
     new_dict_list = []
     table_name = 'fake_data'
     result = save_to_s3(extract_client, bucket_name, new_dict_list, table_name, extract_time)
