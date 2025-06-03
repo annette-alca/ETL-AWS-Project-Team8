@@ -113,59 +113,15 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
             
             return {"fact_sales_order": fact_sales_order, "dim_date":dim_date}
 
-
-
-# def append_json_raw_tables(s3_client, ingestion_bucket, new_json_key, processed_bucket):
-#         table_name = new_json_key.split('/')[1]
-#         main_json_key = f"raw_data/{table_name}_all.json"
-        
-#         new_json = s3_client.get_object(Bucket=ingestion_bucket, Key=new_json_key)
-#         new_df = pd.read_json(StringIO(new_json["Body"].read().decode("utf-8")))
-
-#         try:
-#             main_json = s3_client.get_object(Bucket=processed_bucket, Key =main_json_key)
-#             main_df =  pd.read_json(StringIO(main_json["Body"].read().decode("utf-8")))
-#             merged_df = pd.concat([main_df, new_df], ignore_index=True)
-#         except s3_client.exceptions.NoSuchKey:
-#             merged_df = new_df.copy()
-
-#         json_buffer = StringIO()
-
-#         merged_df.to_json(json_buffer, indent=2, orient="index", default_handler=serialise_object)
-
-#         s3_client.put_object(Bucket=processed_bucket, Body=json_buffer.getvalue(), 
-#             Key=main_json_key)
-        
-#         return (table_name, new_df)
-
-#we need to get the latest update and convert it to a data frame
-# merge with new data frame 
-# save as new file
-
-# prefix 
-# separate json file that holds a list of all previous updates 
-# create a file within the s3 bucket which is last updated 
-# delete the old one - replace with the new one 
-
-def append_json_raw_tables(s3_client, ingestion_bucket, new_json_key, processed_bucket, timestamp):
+def append_json_raw_tables(s3_client, ingestion_bucket, new_json_key, processed_bucket):
         table_name = new_json_key.split('/')[1]
-        date, time= timestamp.split('T')[0], timestamp.split('T')[1]
-        #key for finding last updated file to merge with new data frame
-        old_key = s3_client.list_objects_v2(bucket=processed_bucket)
-        print (old_key)
-
-        # delete previous file 
-
-        # adding the new last updated file  
-        s3_client.put_object(Bucket=processed_bucket, Key = f"last_updated/{table_name}_{date}_{time}.json")
-
-        main_json_key = f"raw_data/{table_name}_all/{date}/{time}.json"
+        main_json_key_overwritten = f"db_state/{table_name}_all.json"
         
         new_json = s3_client.get_object(Bucket=ingestion_bucket, Key=new_json_key)
         new_df = pd.read_json(StringIO(new_json["Body"].read().decode("utf-8")))
 
         try:
-            main_json = s3_client.get_object(Bucket=processed_bucket, Key = old_key)
+            main_json = s3_client.get_object(Bucket=processed_bucket, Key = main_json_key_overwritten)
             main_df =  pd.read_json(StringIO(main_json["Body"].read().decode("utf-8")))
             merged_df = pd.concat([main_df, new_df], ignore_index=True)
         except s3_client.exceptions.NoSuchKey:
@@ -174,9 +130,9 @@ def append_json_raw_tables(s3_client, ingestion_bucket, new_json_key, processed_
         json_buffer = StringIO()
 
         merged_df.to_json(json_buffer, indent=2, orient="index", default_handler=serialise_object)
-
+        
         s3_client.put_object(Bucket=processed_bucket, Body=json_buffer.getvalue(), 
-            Key=main_json_key)
+            Key=main_json_key_overwritten)
         
         return (table_name, new_df)
 
