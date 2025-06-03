@@ -112,6 +112,17 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
             # to do: get previous list of dates, get only new dates
             try:
                 main_dates = key_to_df(s3_client, "date",processed_bucket)
+
+                # Merge the DataFrames with the 'indicator' flag to track the source of each row
+                merged_dates = pd.merge(df1, df2, how='outer', indicator=True)
+
+                # Find rows that are only in df1 but not in df2
+                diff_df1 = merged_df[merged_df['_merge'] == 'left_only']
+                print(diff_df1)
+
+                # Find rows that are only in df2 but not in df1
+                diff_df2 = merged_df[merged_df['_merge'] == 'right_only']
+                print(diff_df2)
             ###################
 
             dim_date = pd.DataFrame(columns=['date_id','year','month','date'])
