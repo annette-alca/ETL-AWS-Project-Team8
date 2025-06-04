@@ -24,15 +24,15 @@ def lambda_transform(events, context):
     for new_key in events["new_keys"]:
         table_name, new_df = append_json_raw_tables(s3_client, ingestion_bucket, new_key, processed_bucket)
         transformed_dict = mvp_transform_df(s3_client, table_name, new_df, processed_bucket)
-        list_of_keys.append(save_to_s3(processed_bucket, transformed_dict, events["timestamp"]))
+        list_of_keys.append(save_parquet_to_s3(processed_bucket, transformed_dict, events["timestamp"]))
 
 def key_to_df(s3_client, table_name, bucket_name):
-    new_json = s3_client.get_object(Bucket=bucket_name, Key=f"raw_data/{table_name}_all.json")
+    new_json = s3_client.get_object(Bucket=bucket_name, Key=f"db_state/{table_name}_all.json")
     new_df = pd.read_json(StringIO(new_json["Body"].read().decode("utf-8")), orient="index")
     new_df.to_csv("tempdata/dim_staff_test.csv")
     return new_df
 
-def save_to_s3(bucket_name, transformed_dict, extract_time):
+def save_parquet_to_s3(bucket_name, transformed_dict, extract_time):
     # need to change doc string
     """
     Utility function, stores a parquet file in an S3 bucket.  Object key is derived from table_name and extract_time arguments
@@ -89,10 +89,11 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
             return {"dim_currency": dim_currency}
         
         case "sales_order":
-            for col in ['created_at','last_updated']:
-                new_df[col] = new_df[col].astype(str)
-            new_df[['created_date','created_time']] = new_df['created_at'].str.split(" ", expand=True)
-            new_df[['last_updated_date','last_updated_time']] = new_df['last_updated'].str.split("T", expand=True)
+            for date_col in ['created_at', 'agreed_delivery_date','agreed_payment_date']:
+                new_df[date_col] = new_df[date_col].astype(str)
+            new_df[['created_date','created_time']] = new_df['created_at'].str.split(' ',n=1,expand=True)
+            new_df[['last_updated_date','last_updated_time']] = new_df['last_updated'].str.split("T", n=1, expand=True)
+
 
             fact_sales_order = new_df.loc[:,["sales_order_id", "created_date", "created_time",
                             "last_updated_date", "last_updated_time", "staff_id",
@@ -102,29 +103,58 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
             fact_sales_order.replace({'staff_id':'sales_staff_id'})
             print(fact_sales_order)
 
+            #generating dim_date
             dates = pd.concat([new_df['created_date'], new_df['last_updated_date'], 
                     new_df['agreed_delivery_date'], new_df['agreed_payment_date']], ignore_index=True)
+            dates.drop_duplicates(inplace=True, ignore_index=True)
+
+            ####################
+            # to do: get previous list of dates, get only new dates
+            try:
+                main_dates = key_to_df(s3_client, "date",processed_bucket)
+
+                # Merge the DataFrames with the 'indicator' flag to track the source of each row
+                merged_dates = pd.merge(df1, df2, how='outer', indicator=True)
+
+                # Find rows that are only in df1 but not in df2
+                diff_df1 = merged_df[merged_df['_merge'] == 'left_only']
+                print(diff_df1)
+
+                # Find rows that are only in df2 but not in df1
+                diff_df2 = merged_df[merged_df['_merge'] == 'right_only']
+                print(diff_df2)
+            ###################
+
             dim_date = pd.DataFrame(columns=['date_id','year','month','date'])
-            dim_date['date_id'] = dates
-            dim_date.drop_duplicates(inplace=True, ignore_index=True)
-            dim_date[['year','month','date']] = dim_date['date_id'].str.split("-", expand=True)
+            dim_date['date_str'] = dates
+            dim_date['date_id'] = [datetime.strptime(date,'%Y-%m-%d') for date in dates]
+            dim_date[['year','month','date']] = dim_date['date_str'].str.split("-", expand=True)
+            for col_date in ['year','month','date']:
+                dim_date[col_date] = dim_date[col_date].astype(int)
+            dim_date.drop(columns=['date_str'], inplace=True)
+            
+            
             #still need to add month and day of the week. there is a weekday method in datetime
+            dim_date['day_of_week'] = [d.weekday() for d in dim_date["date_id"]]
+            dim_date['day_name'] = [d.day_name() for d in dim_date["date_id"]]
+            dim_date['month_name'] = [d.month_name() for d in dim_date["date_id"]]
+            dim_date['quarter'] = [d.quarter for d in dim_date["date_id"]]
+
             print(dim_date)
+         
+
             
             return {"fact_sales_order": fact_sales_order, "dim_date":dim_date}
 
-
-
 def append_json_raw_tables(s3_client, ingestion_bucket, new_json_key, processed_bucket):
         table_name = new_json_key.split('/')[1]
-        main_json_key = f"raw_data/{table_name}_all.json"
+        main_json_key_overwritten = f"db_state/{table_name}_all.json"
         
         new_json = s3_client.get_object(Bucket=ingestion_bucket, Key=new_json_key)
         new_df = pd.read_json(StringIO(new_json["Body"].read().decode("utf-8")))
 
         try:
-            main_json = s3_client.get_object(Bucket=processed_bucket, Key =main_json_key)
-            main_df =  pd.read_json(StringIO(main_json["Body"].read().decode("utf-8")))
+            main_df =  key_to_df(s3_client, table_name, processed_bucket)
             merged_df = pd.concat([main_df, new_df], ignore_index=True)
         except s3_client.exceptions.NoSuchKey:
             merged_df = new_df.copy()
@@ -132,12 +162,11 @@ def append_json_raw_tables(s3_client, ingestion_bucket, new_json_key, processed_
         json_buffer = StringIO()
 
         merged_df.to_json(json_buffer, indent=2, orient="index", default_handler=serialise_object)
-
+        
         s3_client.put_object(Bucket=processed_bucket, Body=json_buffer.getvalue(), 
-            Key=main_json_key)
+            Key=main_json_key_overwritten)
         
         return (table_name, new_df)
-
 
 def backlog_transform_to_parquet():
     additional_tables = {"payment":["fact_sales_order", "dim_date"], 
