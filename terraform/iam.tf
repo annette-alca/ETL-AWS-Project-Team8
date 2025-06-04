@@ -32,7 +32,7 @@ data "aws_iam_policy_document" "s3_data_policy_doc" {
   statement {
     effect = "Allow"
     actions = ["s3:*"]
-    resources = ["arn:aws:s3:::${aws_s3_bucket.processed_s3.bucket}"]
+    resources = ["arn:aws:s3:::${aws_s3_bucket.processed_s3.bucket}/*"]
   }
 
   statement {
@@ -86,7 +86,10 @@ data "aws_iam_policy_document" "state_machine_policy_doc" {
   statement {
     effect = "Allow"
     actions = ["lambda:InvokeFunction"]
-    resources = ["arn:aws:lambda:eu-west-2:215184330991:function:lambda_extract"]
+    resources = [
+      aws_lambda_function.extract_lambda.arn, 
+      aws_lambda_function.transform_lambda.arn
+    ]
   }
 }
 
@@ -166,7 +169,7 @@ resource "aws_iam_role_policy_attachment" "state_machine_cw_policy_attachment" {
   policy_arn = aws_iam_policy.cw_policy.arn
 }
 
-# SNS Topic Policy 
+# SNS Topic Policy Extract
 resource "aws_sns_topic_policy" "lambda_extract_alerts_policy" {
   arn    = aws_sns_topic.lambda_extract_alerts.arn
   policy = jsonencode({
@@ -180,6 +183,25 @@ resource "aws_sns_topic_policy" "lambda_extract_alerts_policy" {
         },
         Action: "SNS:Publish",
         Resource: aws_sns_topic.lambda_extract_alerts.arn
+      }
+    ]
+  })
+}
+
+# SNS Topic Policy Transform 
+resource "aws_sns_topic_policy" "lambda_transform_alerts_policy" {
+  arn    = aws_sns_topic.lambda_transform_alerts.arn
+  policy = jsonencode({
+    Version = "2012-10-17",
+      Statement: [
+      {
+        Sid: "AllowCloudWatchToPublish",
+        Effect: "Allow",
+        Principal: {
+          Service: "cloudwatch.amazonaws.com"
+        },
+        Action: "SNS:Publish",
+        Resource: aws_sns_topic.lambda_transform_alerts.arn
       }
     ]
   })
