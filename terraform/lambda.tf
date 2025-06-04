@@ -1,3 +1,7 @@
+# --------------
+# Extract Lambda  
+# --------------
+
 # Extract Lambda dependency layer
 data "archive_file" "layer" {
   type             = "zip"
@@ -12,17 +16,14 @@ resource "aws_lambda_layer_version" "extract_dependencies_layer" {
   filename            = data.archive_file.layer.output_path
 }
 
-
 # Extract lambda
 data "archive_file" "lambda_extract" {
   type        = "zip"
-  source_file = "${path.module}/../src/extract/lambda_extract.py" # test file
+  source_file = "${path.module}/../src/extract/lambda_extract.py" 
   output_path = "${path.root}/deployments/lambda_extract.zip"
 }
 
-resource "aws_lambda_function" "test_lambda" {
-  # If the file is not in the current working directory you will need to include a
-  # path.module in the filename.
+resource "aws_lambda_function" "extract_lambda" {
   filename      = "${path.root}/deployments/lambda_extract.zip"
   function_name = "lambda_extract"
   role          = aws_iam_role.iam_for_lambda.arn
@@ -46,7 +47,30 @@ resource "aws_lambda_function" "test_lambda" {
   }
 }
 
-#lambda 2
+# ----------------
+# Transform Lambda  
+# ----------------
 
+# Transform Lambda
 
-#lambda 3
+data "archive_file" "lambda_transform" {
+  type        = "zip"
+  source_file = "${path.module}/../src/transform/lambda_transform.py" 
+  output_path = "${path.root}/deployments/lambda_transform.zip"
+}
+
+resource "aws_lambda_function" "transform_lambda" {
+  filename      = "${path.root}/deployments/lambda_transform.zip"
+  function_name = "lambda_transform"
+  role          = aws_iam_role.iam_for_lambda.arn
+  handler       = "lambda_transform.lambda_transform"
+  source_code_hash = data.archive_file.lambda_transform.output_base64sha256
+  runtime = "python3.13"
+  timeout = 30
+}
+
+# ----------------
+# Load Lambda  
+# ----------------
+
+# Load lambda 

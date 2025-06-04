@@ -10,7 +10,12 @@ resource "aws_sfn_state_machine" "totes-state-machine" {
   "States": {
     "lambda_extract": {
       "Type": "Task",
-      "Resource": "${aws_lambda_function.test_lambda.arn}",
+      "Resource": "${aws_lambda_function.extract_lambda.arn}",
+      "Next": "lambda_transform"
+    },
+    "lambda_transform": {
+      "Type": "Task",
+      "Resource": "${aws_lambda_function.transform_lambda.arn}",
       "End": true
     }
   }
