@@ -20,8 +20,45 @@ def department_df():
 def sales_order_df():
     return pd.read_json("tests/data/sales_order.json").reset_index()
 
+@pytest.fixture(scope='module')
+def aws_credentials():
+    os.environ["aws_access_key_id"]="Test"
+    os.environ["aws_secret_access_key"]="test"
+    os.environ["aws_session_token"]="test"
+    os.environ["aws_security_token"]="test"
+    os.environ["aws_region"]="eu-west-2"
+
+@pytest.fixture(scope='class')
+def s3_boto(aws_credentials):
+    with mock_aws(aws_credentials):
+
+        yield boto3.client('s3')
 
 
+@pytest.fixture(scope='class')
+def mock_s3_buckets(s3_boto):
+    """Create ingestion and processed buckets for test functions"""
+    
+    bucket_1 = "ingestion-bucket"
+    bucket_2 = "processed-bucket"
+
+    key = "dev/staff"
+    
+    with open("./tests/data/staff.json", "r") as jsonfile:
+        body = json.dumps(json.load(jsonfile))          
+        s3_boto.create_bucket(Bucket=bucket_1,
+                            CreateBucketConfiguration={"LocationConstraint":"eu-west-2"})
+
+        s3_boto.put_object(Bucket=bucket_1, Key=key, Body=body.encode("utf-8"))
+        # output = s3_boto.list_objects_v2(Bucket=bucket_1, Prefix=key)
+       
+
+    s3_boto.create_bucket(Bucket=bucket_2,
+                            CreateBucketConfiguration={"LocationConstraint":"eu-west-2"})
+    
+
+
+##  MVP Transform to be refactored to use mock S3 and latest updates
 
 class TestMVPTransformDFStaff:
 
@@ -78,42 +115,6 @@ class TestMVPTransformDFStaff:
 
 
 
-@pytest.fixture()
-def aws_credentials():
-    os.environ["aws_access_key_id"]="Test"
-    os.environ["aws_secret_access_key"]="test"
-    os.environ["aws_session_token"]="test"
-    os.environ["aws_security_token"]="test"
-    os.environ["aws_region"]="eu-west-2"
-
-@pytest.fixture
-def s3_boto(aws_credentials):
-    with mock_aws(aws_credentials):
-
-        yield boto3.client('s3')
-
-
-@pytest.fixture(scope='class')
-def mock_s3_buckets(s3_boto):
-    """Create ingestion and processed buckets for test functions"""
-    
-    bucket_1 = "ingestion-bucket"
-    bucket_2 = "processed-bucket"
-
-    key = "dev/staff"
-    
-    with open("./tests/data/staff.json", "r") as jsonfile:
-        body = json.dumps(json.load(jsonfile))          
-        s3_boto.create_bucket(Bucket=bucket_1,
-                            CreateBucketConfiguration={"LocationConstraint":"eu-west-2"})
-
-        s3_boto.put_object(Bucket=bucket_1, Key=key, Body=body.encode("utf-8"))
-        # output = s3_boto.list_objects_v2(Bucket=bucket_1, Prefix=key)
-       
-
-    s3_boto.create_bucket(Bucket=bucket_2,
-                            CreateBucketConfiguration={"LocationConstraint":"eu-west-2"})
-    
 
 
 
@@ -140,6 +141,29 @@ class TestAppendJSONRaw:
         assert ((result[1].iloc[0]['first_name'])) == processed_json_0['first_name']
         assert len(processed_json) == len(result[1]) # 4
 
+
+    def test_append_json_raw_with_existing_data(self, s3_boto,mock_s3_buckets):
+        new_json_key = 'dev/staff'
+        processed_key = 'db_state/staff_all.json'
+        with open("./tests/data/staff_add.json", "r") as jsonfile:
+            body = json.dumps(json.load(jsonfile))
+            s3_boto.put_object(Bucket='ingestion-bucket', Key=new_json_key, Body=body.encode("utf-8"))
+
+        result = append_json_raw_tables(s3_boto, 'ingestion-bucket', new_json_key, 'processed-bucket')
+
+        processed_obj = s3_boto.get_object(Bucket="processed-bucket", Key=processed_key)
+        processed_json = json.loads(processed_obj["Body"].read().decode("utf-8"))
+        processed_json_0 = processed_json['0']
+        processed_json_4 = processed_json['4']
+
+        # Assert that processed is longer than new df
+        assert len(processed_json) > len(result[1]) 
+        # Assert length of processed data has increased        
+        assert len(processed_json) > 4
+        # Assert that first row of new df is same as relative row in processed
+        assert ((result[1].iloc[0]['first_name'])) == processed_json_4['first_name']
+
+        
 
 
 
