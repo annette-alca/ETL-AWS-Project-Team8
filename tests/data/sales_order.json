@@ -1,0 +1,72 @@
+[
+  {
+    "sales_order_id": 14454,
+    "created_at": "2025-06-02T11:19:10.291000",
+    "last_updated": "2025-06-02T11:19:10.291000",
+    "design_id": 203,
+    "staff_id": 7,
+    "counterparty_id": 20,
+    "units_sold": 67926,
+    "unit_price": 3.93,
+    "currency_id": 2,
+    "agreed_delivery_date": "2025-06-04",
+    "agreed_payment_date": "2025-06-05",
+    "agreed_delivery_location_id": 24
+  },
+  {
+    "sales_order_id": 14455,
+    "created_at": "2025-06-02T11:41:10.067000",
+    "last_updated": "2025-06-02T11:41:10.067000",
+    "design_id": 74,
+    "staff_id": 5,
+    "counterparty_id": 8,
+    "units_sold": 39319,
+    "unit_price": 3.87,
+    "currency_id": 2,
+    "agreed_delivery_date": "2025-06-03",
+    "agreed_payment_date": "2025-06-06",
+    "agreed_delivery_location_id": 8
+  },
+  {
+    "sales_order_id": 14456,
+    "created_at": "2025-06-02T11:42:09.784000",
+    "last_updated": "2025-06-02T11:42:09.784000",
+    "design_id": 225,
+    "staff_id": 10,
+    "counterparty_id": 5,
+    "units_sold": 1301,
+    "unit_price": 3.0,
+    "currency_id": 2,
+    "agreed_delivery_date": "2025-06-04",
+    "agreed_payment_date": "2025-06-03",
+    "agreed_delivery_location_id": 16
+  },
+  {
+    "sales_order_id": 14457,
+    "created_at": "2025-06-02T12:32:09.919000",
+    "last_updated": "2025-06-02T12:32:09.919000",
+    "design_id": 579,
+    "staff_id": 2,
+    "counterparty_id": 8,
+    "units_sold": 70016,
+    "unit_price": 3.1,
+    "currency_id": 1,
+    "agreed_delivery_date": "2025-06-02",
+    "agreed_payment_date": "2025-06-02",
+    "agreed_delivery_location_id": 16
+  },
+  {
+    "sales_order_id": 14458,
+    "created_at": "2025-06-02T12:48:10.027000",
+    "last_updated": "2025-06-02T12:48:10.027000",
+    "design_id": 110,
+    "staff_id": 12,
+    "counterparty_id": 7,
+    "units_sold": 64530,
+    "unit_price": 3.04,
+    "currency_id": 2,
+    "agreed_delivery_date": "2025-06-03",
+    "agreed_payment_date": "2025-06-06",
+    "agreed_delivery_location_id": 7
+  }
+]
