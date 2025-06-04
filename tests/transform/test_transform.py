@@ -57,65 +57,95 @@ def mock_s3_buckets(s3_boto):
                             CreateBucketConfiguration={"LocationConstraint":"eu-west-2"})
     
 
+class TestMVPTransformDF:
 
-##  MVP Transform to be refactored to use mock S3 and latest updates
+    def test_transform_staff_case(self, s3_boto, mock_s3_buckets):
+        ingestion_bucket = "ingestion-bucket"
+        processed_bucket = "processed-bucket"
+        staff_key = "dev/staff"
 
-class TestMVPTransformDFStaff:
+        ## upload department.json to processed bucket
 
-    @pytest.mark.skip
-    def test_mvp_transform_df_staff(self, monkeypatch, staff_df, department_df):
-        # Patch key_to_df to return department_df
-        from src.transform import lambda_transform
-        monkeypatch.setattr(lambda_transform, "table_name_to_df", lambda *_: department_df)
+        with open("./tests/data/department.json", "r") as jsonfile:
+            department_list = json.load(jsonfile)
 
-        staff_result = mvp_transform_df(None, "staff", staff_df, None)
+        department_dict = {}
+        for i in range(len(department_list)):
+            department_dict[str(i)] = department_list[i]
 
-        print(staff_result)
-        print(staff_result["dim_staff"])
+        department_data = json.dumps(department_dict)
 
-        assert "dim_staff" in staff_result
-        staff_df = staff_result["dim_staff"]
-        assert not staff_df.empty
-        assert set(["staff_id", 
-                    "first_name", 
-                    "last_name", 
-                    "department_name", 
-                    "location", 
-                    "email_address"]).issubset(staff_df.columns)
-        
-        # Extract the row where staff_id is 1
-        staff_row = staff_df[staff_df["staff_id"] == 1].iloc[0]
+        s3_boto.put_object(
+            Bucket=processed_bucket,
+            Key="db_state/department_all.json",
+            Body=department_data.encode("utf-8")
+        )
 
-        # Assert fields
-        assert staff_row["first_name"] == "Jeremie"
-        assert staff_row["last_name"] == "Franey"
-        assert staff_row["email_address"] == "jeremie.franey@terrifictotes.com"
-        assert staff_row["department_name"] == "Purchasing" 
-        assert staff_row["location"] == "Manchester"   
+        ## load staff.json from bucket 
+        response = s3_boto.get_object(Bucket=ingestion_bucket, Key=staff_key)
+        new_df = pd.read_json(StringIO(response["Body"].read().decode("utf-8")))
 
+        ## run transformation
+        result = mvp_transform_df(s3_boto, "staff", new_df, processed_bucket)
+        dim_staff = result["dim_staff"]
 
-    
-    @pytest.mark.skip
-    def test_mvp_transform_df_sales_order(self, sales_order_df):
-        sales_result = mvp_transform_df(None,"sales_order", sales_order_df, None)
-        
-        assert "fact_sales_order" in sales_result
-        sales_order_df = sales_result["fact_sales_order"]
-        assert not sales_order_df.empty
-        assert set(['sales_order_id', 'created_date', 'created_time', 'last_updated_date',
-        'last_updated_time', 'staff_id', 'counterparty_id', 'units_sold',
-        'unit_price', 'currency_id', 'design_id', 'agreed_payment_date',
-        'agreed_delivery_date', 'agreed_delivery_location_id']).issubset(sales_order_df.columns)
-            
-        assert "dim_date" in sales_result
-        dim_date_df = sales_result["dim_date"]
-        assert not dim_date_df.empty
-        print(dim_date_df.columns)
-        assert set(['date_id', 'year', 'month', 'date']).issubset(dim_date_df.columns)
+        ## assert
+        assert isinstance(result, dict)
+        assert "dim_staff" in result
+        assert not dim_staff.empty
 
+        transformed_columns = [
+            "staff_id", "first_name", "last_name",
+            "department_name", "location", "email_address"
+        ]
+        assert set(transformed_columns).issubset(dim_staff.columns)
 
+        transformed_row_by_staff_id = dim_staff[dim_staff["staff_id"] == 1].iloc[0]
+        assert transformed_row_by_staff_id["first_name"] == "Jeremie"
+        assert transformed_row_by_staff_id["department_name"] == "Purchasing"
 
+    def test_transform_address_case(self, s3_boto, mock_s3_buckets):
+        processed_bucket = "processed-bucket"
 
+        ## upload address.json to processed bucket
+        with open("./tests/data/address.json", "r") as jsonfile:
+            address_list = json.load(jsonfile)
+
+        address_dict = {}
+        for i in range(len(address_list)):
+            address_dict[str(i)] = address_list[i]
+
+        address_data = json.dumps(address_dict)
+
+        s3_boto.put_object(
+            Bucket=processed_bucket,
+            Key="db_state/address_all.json",
+            Body=address_data.encode("utf-8")
+        )
+
+        ## load the address file on the go
+        new_df = pd.DataFrame(address_list)
+
+        ## run transformation
+        result = mvp_transform_df(s3_boto, "address", new_df, processed_bucket)
+        dim_location = result["dim_location"]
+
+        ## assert structure
+        assert isinstance(result, dict)
+        assert "dim_location" in result
+        assert not dim_location.empty
+
+        expected_columns = [
+            "address_id", "address_line_1", "address_line_2",
+            "district", "city", "postal_code", "country", "phone"
+        ]
+        assert set(expected_columns).issubset(dim_location.columns)
+
+        ## assert content 
+        transformed_row_by_address_id = dim_location[dim_location["address_id"] == 1].iloc[0]
+        print(transformed_row_by_address_id ,'<<<<<<<< ROW BY ID<<<<<<')
+        assert transformed_row_by_address_id["city"] == 'New Patienceburgh'
+        print(transformed_row_by_address_id['city'] , '<<<<<CITY<<<<<<')
 
 
 class TestAppendJSONRaw:
