@@ -50,6 +50,6 @@ resource "aws_cloudwatch_metric_alarm" "lambda_transform_error_alarm" {
   alarm_actions       = [aws_sns_topic.lambda_transform_alerts.arn]
 
   dimensions = {
-    FunctionName = aws_lambda_function.extract_lambda.function_name
+    FunctionName = aws_lambda_function.transform_lambda.function_name
   }
 }
