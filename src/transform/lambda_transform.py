@@ -69,7 +69,7 @@ def save_parquet_to_s3(bucket_name, transformed_dict, extract_time):
     """
     key_list =[]
     if not transformed_dict: #None from mvp_transform because table is part of backlog
-        return None
+        return key_list
     for transform_name, new_df in transformed_dict.items():
         date, time = extract_time.split("T")
         key = f"dev/{transform_name}/{date}/{transform_name}_{time}.parquet"
@@ -216,20 +216,22 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
             #below merging with dbstate Series main_dates
             try:
                 main_dates = table_name_to_df(s3_client, "date", processed_bucket)
-                print(main_dates,'main_dates')
                 main_set = set(main_dates[0])
                 new_set = set(new_dates)
                 unique_new_set = new_set.difference(main_set)
+                
 
                 if len(unique_new_set) == 0: #no nwq unique dates, just return sales data
                     return {"fact_sales_order": fact_sales_order}
                 
+                unique_new_dates = pd.Series(list(unique_new_set))
                 merged_set = main_set.union(new_set)
                 merged_dates = pd.Series(list(merged_set))
             
             except s3_client.exceptions.NoSuchKey:
                 unique_new_dates = new_dates.copy()
                 merged_dates = new_dates.copy()
+
 
             json_buffer = StringIO()
             merged_dates.to_json(
@@ -319,13 +321,14 @@ def serialise_object(obj):
 if __name__ == "__main__":
     events = {
   "message": "completed ingestion",
-  "timestamp": "2025-06-04T11:58:43.983758",
-  "total_new_files": 1,
-  "new_keys": ["dev/sales_order/2025-06-04/sales_order_10:36:10.287393.json"  ]
+  "timestamp": "2025-06-04T12:25:43.983758",
+  "total_new_files": 3,
+  "new_keys": ["dev/transaction/2025-06-04/transaction_10:04:38.826283.json",
+               "dev/sales_order/2025-06-04/sales_order_09:44:39.566927.json",
+               "dev/staff/2025-06-02/staff_11:12:22.779187.json"
+                ]
 }
     print(lambda_transform(events, None))
-
-
 
 
 '''"dev/address/2025-05-30/address_11:24:04.260569.json",
@@ -338,3 +341,6 @@ if __name__ == "__main__":
                     "dev/sales_order/2025-06-02/sales_order_09:46:02.338097.json",
                     "dev/staff/2025-05-29/staff_11:41:07.526864.json",
                     "dev/transaction/2025-05-29/transaction_11:41:08.378130.json"'''
+
+
+
