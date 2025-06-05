@@ -145,8 +145,11 @@ class TestMVPTransformDF:
         assert set(expected_columns).issubset(dim_location.columns)
         
         ## assert content 
-        transformed_row_by_address_id = dim_location[dim_location["location_id"] == 1].iloc[0]
-        assert transformed_row_by_address_id["city"] == 'New Patienceburgh'
+        transformed_row_by_address_id = dim_location.iloc[1,:]
+        print(transformed_row_by_address_id)
+        assert transformed_row_by_address_id["location_id"] == 2
+        assert transformed_row_by_address_id["city"] == 'Aliso Viejo'
+        assert dim_location.loc[1,"country"]=="San Marino"
 
 
     def test_transform_counterparty_case(self, s3_boto, mock_s3_buckets):
