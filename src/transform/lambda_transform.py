@@ -8,7 +8,7 @@ import awswrangler as wr
 import json
 from pprint import pprint
 
-# import dotenv  # for local runs
+import dotenv  # for local runs
 
 def lambda_transform(events, context):
     # extracting data from s3 and converting to df
@@ -20,7 +20,7 @@ def lambda_transform(events, context):
             "new_keys": [],
         }
 
-    # dotenv.load_dotenv()  ## for local implementation
+    dotenv.load_dotenv()  ## for local implementation
     s3_client = boto3.client("s3")
     ingestion_bucket = os.environ["INGESTION_S3"]
     processed_bucket = os.environ["PROCESSED_S3"]
@@ -50,8 +50,8 @@ def table_name_to_df(s3_client, table_name, bucket_name):
     key = f"db_state/{table_name}_all.json"
     new_object = s3_client.get_object(Bucket=bucket_name, Key=key)
     new_json = json.loads(new_object["Body"].read().decode("utf-8"))
-    new_df = pd.DataFrame(new_json)
-    print(table_name,new_df)
+    new_df = pd.DataFrame.from_dict(data=new_json, orient='columns')
+    print(f'\n\n\n>>>>TABLE_NAME: {table_name},{new_df}')
 
     return new_df
 
@@ -88,6 +88,7 @@ def save_parquet_to_s3(bucket_name, transformed_dict, extract_time):
 
 
 def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
+    print('starting MVP transform')
     match table_name:
         case "staff":
             department_df = table_name_to_df(s3_client, "department", processed_bucket)
@@ -178,18 +179,23 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
             return {"dim_currency": dim_currency}
 
         case "sales_order":
+            print('checking dates')
             for date_col in [
                 "created_at",
                 "agreed_delivery_date",
                 "agreed_payment_date",
             ]:
                 new_df[date_col] = new_df[date_col].astype(str)
+
+   
             new_df[["created_date", "created_time"]] = new_df["created_at"].str.split(
                 "T", n=1, expand=True
             )
+        
             new_df[["last_updated_date", "last_updated_time"]] = new_df[
                 "last_updated"
             ].str.split("T", n=1, expand=True)
+
 
             fact_sales_order = new_df.loc[
                 :,
@@ -228,6 +234,8 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
                 main_set = set(main_dates[0])
                 new_set = set(new_dates)
                 unique_new_set = new_set.difference(main_set)
+
+                print(f'main dates\n {main_dates}')
                 
 
                 if len(unique_new_set) == 0: #no nwq unique dates, just return sales data
@@ -241,7 +249,7 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
                 unique_new_dates = new_dates.drop_duplicates(ignore_index=True)
                 merged_dates = unique_new_dates.copy()
 
-
+            print('we got here')
             json_buffer = StringIO()
             merged_dates.to_json(
                 json_buffer, indent=2, orient="index", default_handler=serialise_object
@@ -276,8 +284,9 @@ def append_json_raw_tables(s3_client, ingestion_bucket, new_json_key, processed_
     main_json_key_overwritten = f"db_state/{table_name}_all.json"
     new_object = s3_client.get_object(Bucket=ingestion_bucket, Key=new_json_key)
     new_json = json.loads(new_object["Body"].read().decode("utf-8"))
-    new_df = pd.DataFrame(new_json)
-    print(new_df)
+
+    new_df = pd.DataFrame.from_dict(data=new_json, orient='columns')
+    
 
     try:
         main_df = table_name_to_df(s3_client, table_name, processed_bucket)
@@ -296,13 +305,20 @@ def append_json_raw_tables(s3_client, ingestion_bucket, new_json_key, processed_
     #     Body=json_buffer.getvalue(),
     #     Key=main_json_key_overwritten)
 
-    wr.s3.to_json(
-        df= merged_df,
-        path= f's3://{processed_bucket}/{main_json_key_overwritten}', 
-        indent=2, orient="index", default_handler=serialise_object
-    )
+    df_dict = merged_df.T.to_dict()
     
-
+    df_list = list(df_dict.values())
+    
+    # wr.s3.to_json(
+    #     df=df_list,
+    #     path= f's3://{processed_bucket}/{main_json_key_overwritten}', 
+    #     indent=2, orient='columns', default_handler=serialise_object, index=False
+    # )
+    s3_client.put_object(Bucket=processed_bucket, Body=json.dumps(df_list, default=serialise_object, indent=2), 
+            Key=main_json_key_overwritten)
+  
+    
+    # print(f'\n\n\Out from json_raw:\n {table_name}\n\n{new_df}\n\n\nmerged_df:\n{merged_df}\n\n\n\nmerged_df.T.to_dict:\n')
     return (table_name, new_df)
 
 
