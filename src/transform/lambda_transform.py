@@ -4,6 +4,8 @@ from datetime import datetime, UTC
 from io import StringIO
 import os
 from decimal import Decimal
+import awswrangler as wr
+
 # import dotenv  # for local runs
 
 def lambda_transform(events, context):
@@ -73,8 +75,11 @@ def save_parquet_to_s3(bucket_name, transformed_dict, extract_time):
     for transform_name, new_df in transformed_dict.items():
         date, time = extract_time.split("T")
         key = f"dev/{transform_name}/{date}/{transform_name}_{time}.parquet"
-        new_df.to_parquet(
-            f"s3://{bucket_name}/{key}"
+
+        wr.s3.to_parquet(
+            df=new_df,
+            path=f"s3://{bucket_name}/{key}",
+            dataset=False
         )
         key_list.append(key)
     return key_list
@@ -112,7 +117,7 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
                     "phone",
                 ],
             ]
-            dim_location.rename(columns={"address_id":"location_id"},in_place=True)
+            dim_location.rename(columns={"address_id":"location_id"},inplace=True)
             return {"dim_location": dim_location}
         
         case "counterparty":
@@ -150,6 +155,7 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
                 "counterparty_legal_phone_number",
             ]
             return {"dim_counterparty": dim_counterparty}
+
         case "design":
             dim_design = new_df.loc[
                 :, ["design_id", "design_name", "file_location", "file_name"]
@@ -322,12 +328,16 @@ def serialise_object(obj):
 if __name__ == "__main__":
     events = {
   "message": "completed ingestion",
-  "timestamp": "2025-06-04T12:25:43.983758",
-  "total_new_files": 3,
-  "new_keys": ["dev/transaction/2025-06-04/transaction_10:04:38.826283.json",
-               "dev/sales_order/2025-06-04/sales_order_09:44:39.566927.json",
-               "dev/staff/2025-06-02/staff_11:12:22.779187.json"
-                ]
+  "timestamp": "2025-06-05T09:54:17.116180",
+  "total_new_files": 6,
+  "new_keys": [
+    "dev/address/2025-06-05/address_09:33:46.478020.json",
+    "dev/department/2025-06-05/department_09:33:46.716080.json",
+    "dev/payment_type/2025-06-05/payment_type_09:33:58.957682.json",
+    "dev/purchase_order/2025-06-05/purchase_order_09:34:01.476482.json",
+    "dev/sales_order/2025-06-05/sales_order_09:34:08.175932.json",
+    "dev/staff/2025-06-05/staff_09:34:10.619367.json",
+  ]
 }
     print(lambda_transform(events, None))
 
