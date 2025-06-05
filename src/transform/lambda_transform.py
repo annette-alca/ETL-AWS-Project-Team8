@@ -5,6 +5,8 @@ from io import StringIO
 import os
 from decimal import Decimal
 import awswrangler as wr
+import json
+from pprint import pprint
 
 # import dotenv  # for local runs
 
@@ -45,12 +47,12 @@ def lambda_transform(events, context):
 
 def table_name_to_df(s3_client, table_name, bucket_name):
     """key is generated in next line"""
-    new_json = s3_client.get_object(
-        Bucket=bucket_name, Key=f"db_state/{table_name}_all.json"
-    )
-    new_df = pd.read_json(
-        StringIO(new_json["Body"].read().decode("utf-8")), orient="index"
-    )
+    key = f"db_state/{table_name}_all.json"
+    new_object = s3_client.get_object(Bucket=bucket_name, Key=key)
+    new_json = json.loads(new_object["Body"].read().decode("utf-8"))
+    new_df = pd.DataFrame(new_json)
+    print(table_name,new_df)
+
     return new_df
 
 
@@ -183,7 +185,7 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
             ]:
                 new_df[date_col] = new_df[date_col].astype(str)
             new_df[["created_date", "created_time"]] = new_df["created_at"].str.split(
-                " ", n=1, expand=True
+                "T", n=1, expand=True
             )
             new_df[["last_updated_date", "last_updated_time"]] = new_df[
                 "last_updated"
@@ -272,8 +274,10 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
 def append_json_raw_tables(s3_client, ingestion_bucket, new_json_key, processed_bucket):
     table_name = new_json_key.split("/")[1]
     main_json_key_overwritten = f"db_state/{table_name}_all.json"
-    new_json = s3_client.get_object(Bucket=ingestion_bucket, Key=new_json_key)
-    new_df = pd.read_json(StringIO(new_json["Body"].read().decode("utf-8")))
+    new_object = s3_client.get_object(Bucket=ingestion_bucket, Key=new_json_key)
+    new_json = json.loads(new_object["Body"].read().decode("utf-8"))
+    new_df = pd.DataFrame(new_json)
+    print(new_df)
 
     try:
         main_df = table_name_to_df(s3_client, table_name, processed_bucket)
@@ -281,17 +285,23 @@ def append_json_raw_tables(s3_client, ingestion_bucket, new_json_key, processed_
     except s3_client.exceptions.NoSuchKey:
         merged_df = new_df.copy()
 
-    json_buffer = StringIO()
+    # json_buffer = StringIO()
 
-    merged_df.to_json(
-        json_buffer, indent=2, orient="index", default_handler=serialise_object
-    )
+    # merged_df.to_json(
+    #     json_buffer, indent=2, orient="index", default_handler=serialise_object
+    # )
 
-    s3_client.put_object(
-        Bucket=processed_bucket,
-        Body=json_buffer.getvalue(),
-        Key=main_json_key_overwritten,
+    # s3_client.put_object(
+    #     Bucket=processed_bucket,
+    #     Body=json_buffer.getvalue(),
+    #     Key=main_json_key_overwritten)
+
+    wr.s3.to_json(
+        df= merged_df,
+        path= f's3://{processed_bucket}/{main_json_key_overwritten}', 
+        indent=2, orient="index", default_handler=serialise_object
     )
+    
 
     return (table_name, new_df)
 
@@ -328,18 +338,16 @@ def serialise_object(obj):
 if __name__ == "__main__":
     events = {
   "message": "completed ingestion",
-  "timestamp": "2025-06-05T09:54:17.116180",
-  "total_new_files": 6,
+  "timestamp": "2025-06-05T10:45:00.5",
+  "total_new_files": 4,
   "new_keys": [
-    "dev/address/2025-06-05/address_09:33:46.478020.json",
-    "dev/department/2025-06-05/department_09:33:46.716080.json",
-    "dev/payment_type/2025-06-05/payment_type_09:33:58.957682.json",
-    "dev/purchase_order/2025-06-05/purchase_order_09:34:01.476482.json",
-    "dev/sales_order/2025-06-05/sales_order_09:34:08.175932.json",
-    "dev/staff/2025-06-05/staff_09:34:10.619367.json",
+    "dev/payment/2025-06-05/payment_10:17:46.365541.json",
+    "dev/purchase_order/2025-06-05/purchase_order_10:17:46.465128.json",
+    "dev/sales_order/2025-06-05/sales_order_10:17:46.509467.json",
+    "dev/transaction/2025-06-05/transaction_10:17:46.572364.json"
   ]
 }
-    print(lambda_transform(events, None))
+    pprint(lambda_transform(events, None))
 
 
 '''"dev/address/2025-05-30/address_11:24:04.260569.json",
