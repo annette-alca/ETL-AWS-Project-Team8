@@ -65,19 +65,19 @@ resource "aws_lambda_layer_version" "transform_dependencies_layer" {
   filename            = data.archive_file.transform_layer.output_path
 }
 
-# pyarrow layer
-data "archive_file" "pyarrow_layer" {
-  type             = "zip"
-  output_file_mode = "0666"
-  source_dir       = "${path.module}/../layer_pyarrow/" 
-  output_path      = "${path.module}/../layer_pyarrow.zip" 
-}
+# # pyarrow layer
+# data "archive_file" "pyarrow_layer" {
+#   type             = "zip"
+#   output_file_mode = "0666"
+#   source_dir       = "${path.module}/../layer_pyarrow/" 
+#   output_path      = "${path.module}/../layer_pyarrow.zip" 
+# }
 
-resource "aws_lambda_layer_version" "pyarrow_dependencies_layer" {
-  layer_name          = "pyarrow_dependencies_layer"
-  compatible_runtimes = ["python3.13"]
-  filename            = data.archive_file.pyarrow_layer.output_path
-}
+# resource "aws_lambda_layer_version" "pyarrow_dependencies_layer" {
+#   layer_name          = "pyarrow_dependencies_layer"
+#   compatible_runtimes = ["python3.13"]
+#   filename            = data.archive_file.pyarrow_layer.output_path
+# }
 
 # Transform Lambda
 data "archive_file" "lambda_transform" {
