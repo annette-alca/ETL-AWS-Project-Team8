@@ -43,20 +43,23 @@ def mock_s3_buckets(s3_boto):
     bucket_2 = "processed-bucket"
 
     key = "dev/staff"
-    
+    s3_boto.create_bucket(Bucket=bucket_1,
+                        CreateBucketConfiguration={"LocationConstraint":"eu-west-2"})
+    s3_boto.create_bucket(Bucket=bucket_2,
+                        CreateBucketConfiguration={"LocationConstraint":"eu-west-2"})
+
     with open("./tests/data/staff.json", "r") as jsonfile:
         body = json.dumps(json.load(jsonfile))          
-        s3_boto.create_bucket(Bucket=bucket_1,
-                            CreateBucketConfiguration={"LocationConstraint":"eu-west-2"})
-
+    
         s3_boto.put_object(Bucket=bucket_1, Key=key, Body=body.encode("utf-8"))
         # output = s3_boto.list_objects_v2(Bucket=bucket_1, Prefix=key)
-       
 
-    s3_boto.create_bucket(Bucket=bucket_2,
-                            CreateBucketConfiguration={"LocationConstraint":"eu-west-2"})
-    
-
+    with open("./tests/data/counterparty.json", "r") as jsonfile:
+        body = json.dumps(json.load(jsonfile))          
+        
+        s3_boto.put_object(Bucket=bucket_1, Key="dev/counterparty", Body=body.encode("utf-8"))
+        # output = s3_boto.list_objects_v2(Bucket=bucket_1, Prefix=key)
+        
 class TestMVPTransformDF:
 
     def test_transform_staff_case(self, s3_boto, mock_s3_buckets):
@@ -147,7 +150,10 @@ class TestMVPTransformDF:
 
 
     def test_transform_counterparty_case(self, s3_boto, mock_s3_buckets):
+        
+        ingestion_bucket = "ingestion-bucket"
         processed_bucket = "processed-bucket"
+        counterparty_key = "dev/counterparty"
 
         ## upload address.json to processed bucket
         with open("./tests/data/address.json", "r") as jsonfile:
@@ -165,8 +171,9 @@ class TestMVPTransformDF:
             Body=address_data.encode("utf-8")
         )
 
-        ## load the address file on the go
-        new_df = pd.DataFrame(address_list)
+        ## load counterparty.json from bucket 
+        response = s3_boto.get_object(Bucket=ingestion_bucket, Key=counterparty_key)
+        new_df = pd.read_json(StringIO(response["Body"].read().decode("utf-8")))    
 
         ## run transformation
         result = mvp_transform_df(s3_boto, "counterparty", new_df, processed_bucket)
