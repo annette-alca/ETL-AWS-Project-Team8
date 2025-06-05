@@ -3,17 +3,17 @@
 # --------------
 
 # Extract Lambda dependency layer
-data "archive_file" "layer" {
+data "archive_file" "extract_layer" {
   type             = "zip"
   output_file_mode = "0666"
-  source_dir       = "${path.module}/../layer/"
-  output_path      = "${path.module}/../layer.zip"
+  source_dir       = "${path.module}/../layer_extract/"
+  output_path      = "${path.module}/../layer_extract.zip"
 }
 
 resource "aws_lambda_layer_version" "extract_dependencies_layer" {
   layer_name          = "extract_dependencies_layer"
   compatible_runtimes = ["python3.13"]
-  filename            = data.archive_file.layer.output_path
+  filename            = data.archive_file.extract_layer.output_path
 }
 
 # Extract lambda
@@ -51,8 +51,35 @@ resource "aws_lambda_function" "extract_lambda" {
 # Transform Lambda  
 # ----------------
 
-# Transform Lambda
+# Transform Lambda dependency layer
+data "archive_file" "transform_layer" {
+  type             = "zip"
+  output_file_mode = "0666"
+  source_dir       = "${path.module}/../layer_transform/" 
+  output_path      = "${path.module}/../layer_transform.zip" 
+}
 
+resource "aws_lambda_layer_version" "transform_dependencies_layer" {
+  layer_name          = "transform_dependencies_layer"
+  compatible_runtimes = ["python3.13"]
+  filename            = data.archive_file.transform_layer.output_path
+}
+
+# # pyarrow layer
+# data "archive_file" "pyarrow_layer" {
+#   type             = "zip"
+#   output_file_mode = "0666"
+#   source_dir       = "${path.module}/../layer_pyarrow/" 
+#   output_path      = "${path.module}/../layer_pyarrow.zip" 
+# }
+
+# resource "aws_lambda_layer_version" "pyarrow_dependencies_layer" {
+#   layer_name          = "pyarrow_dependencies_layer"
+#   compatible_runtimes = ["python3.13"]
+#   filename            = data.archive_file.pyarrow_layer.output_path
+# }
+
+# Transform Lambda
 data "archive_file" "lambda_transform" {
   type        = "zip"
   source_file = "${path.module}/../src/transform/lambda_transform.py" 
@@ -66,8 +93,23 @@ resource "aws_lambda_function" "transform_lambda" {
   handler       = "lambda_transform.lambda_transform"
   source_code_hash = data.archive_file.lambda_transform.output_base64sha256
   runtime = "python3.13"
-  timeout = 30
+  layers = [aws_lambda_layer_version.transform_dependencies_layer.arn,
+  "arn:aws:lambda:eu-west-2:336392948345:layer:AWSSDKPandas-Python313:2", 
+  aws_lambda_layer_version.pyarrow_dependencies_layer.arn
+  ]
+  timeout = 300
+
+  environment {
+    variables = {
+
+      BACKEND_S3 = "bucket-to-hold-tf-state-for-terraform"
+      INGESTION_S3 = aws_s3_bucket.ingestion_s3.bucket
+      PROCESSED_S3 = aws_s3_bucket.processed_s3.bucket
+    }
+  }
 }
+
+# add pyarrow 
 
 # ----------------
 # Load Lambda  

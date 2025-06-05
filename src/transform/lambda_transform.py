@@ -4,7 +4,7 @@ from datetime import datetime, UTC
 from io import StringIO
 import os
 from decimal import Decimal
-import dotenv  # for local runs
+# import dotenv  # for local runs
 
 def lambda_transform(events, context):
     # extracting data from s3 and converting to df
@@ -16,7 +16,7 @@ def lambda_transform(events, context):
             "new_keys": [],
         }
 
-    dotenv.load_dotenv()  ## for local implementation
+    # dotenv.load_dotenv()  ## for local implementation
     s3_client = boto3.client("s3")
     ingestion_bucket = os.environ["INGESTION_S3"]
     processed_bucket = os.environ["PROCESSED_S3"]
