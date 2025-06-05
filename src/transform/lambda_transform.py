@@ -112,7 +112,9 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
                     "phone",
                 ],
             ]
+            dim_location.rename(columns={"address_id":"location_id"},in_place=True)
             return {"dim_location": dim_location}
+        
         case "counterparty":
             address_df = table_name_to_df(s3_client, "address", processed_bucket)
             dim_counterparty = pd.merge(
@@ -212,7 +214,6 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
                 ],
                 ignore_index=True,
             )
-            new_dates.drop_duplicates(inplace=True, ignore_index=True)
             #below merging with dbstate Series main_dates
             try:
                 main_dates = table_name_to_df(s3_client, "date", processed_bucket)
@@ -229,8 +230,8 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
                 merged_dates = pd.Series(list(merged_set))
             
             except s3_client.exceptions.NoSuchKey:
-                unique_new_dates = new_dates.copy()
-                merged_dates = new_dates.copy()
+                unique_new_dates = new_dates.drop_duplicates(ignore_index=True)
+                merged_dates = unique_new_dates.copy()
 
 
             json_buffer = StringIO()
@@ -248,17 +249,17 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
             dim_date["date_id"] = [
                 datetime.strptime(date, "%Y-%m-%d") for date in unique_new_dates
             ]
-            dim_date[["year", "month", "day"]] = dim_date["date_str"].str.split(
-                "-", expand=True
-            )
-            for col_date in ["year", "month", "day"]:
-                dim_date[col_date] = dim_date[col_date].astype(int)
+
+            dim_date["year"] = [d.year for d in dim_date["date_id"]]
+            dim_date["month"] = [d.month for d in dim_date["date_id"]]
+            dim_date["day"] = [d.day for d in dim_date["date_id"]]
+
             dim_date.drop(columns=["date_str"], inplace=True)
             dim_date["day_of_week"] = [d.weekday() for d in dim_date["date_id"]]
             dim_date["day_name"] = [d.day_name() for d in dim_date["date_id"]]
             dim_date["month_name"] = [d.month_name() for d in dim_date["date_id"]]
             dim_date["quarter"] = [d.quarter for d in dim_date["date_id"]]
-
+            
             return {"fact_sales_order": fact_sales_order, "dim_date": dim_date}
 
 
