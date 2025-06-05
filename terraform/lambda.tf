@@ -31,7 +31,7 @@ resource "aws_lambda_function" "extract_lambda" {
   source_code_hash = data.archive_file.lambda_extract.output_base64sha256
   runtime = "python3.13"
   layers = [aws_lambda_layer_version.extract_dependencies_layer.arn]
-  timeout = 30
+  timeout = 300
 
 
   environment {
@@ -94,8 +94,8 @@ resource "aws_lambda_function" "transform_lambda" {
   source_code_hash = data.archive_file.lambda_transform.output_base64sha256
   runtime = "python3.13"
   layers = [aws_lambda_layer_version.transform_dependencies_layer.arn,
-  "arn:aws:lambda:eu-west-2:336392948345:layer:AWSSDKPandas-Python313:2", 
-  aws_lambda_layer_version.pyarrow_dependencies_layer.arn
+  "arn:aws:lambda:eu-west-2:336392948345:layer:AWSSDKPandas-Python313:2" 
+  # aws_lambda_layer_version.pyarrow_dependencies_layer.arn
   ]
   timeout = 300
 
