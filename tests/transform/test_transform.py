@@ -136,16 +136,64 @@ class TestMVPTransformDF:
         assert not dim_location.empty
 
         expected_columns = [
-            "address_id", "address_line_1", "address_line_2",
+            "location_id", "address_line_1", "address_line_2",
             "district", "city", "postal_code", "country", "phone"
         ]
         assert set(expected_columns).issubset(dim_location.columns)
-
+        
         ## assert content 
-        transformed_row_by_address_id = dim_location[dim_location["address_id"] == 1].iloc[0]
-        print(transformed_row_by_address_id ,'<<<<<<<< ROW BY ID<<<<<<')
+        transformed_row_by_address_id = dim_location[dim_location["location_id"] == 1].iloc[0]
         assert transformed_row_by_address_id["city"] == 'New Patienceburgh'
-        print(transformed_row_by_address_id['city'] , '<<<<<CITY<<<<<<')
+
+
+    def test_transform_counterparty_case(self, s3_boto, mock_s3_buckets):
+        processed_bucket = "processed-bucket"
+
+        ## upload address.json to processed bucket
+        with open("./tests/data/address.json", "r") as jsonfile:
+            address_list = json.load(jsonfile)
+
+        address_dict = {}
+        for i in range(len(address_list)):
+            address_dict[i] = address_list[i]
+
+        address_data = json.dumps(address_dict)
+        
+        s3_boto.put_object(
+            Bucket=processed_bucket,
+            Key="db_state/address_all.json",
+            Body=address_data.encode("utf-8")
+        )
+
+        ## load the address file on the go
+        new_df = pd.DataFrame(address_list)
+
+        ## run transformation
+        result = mvp_transform_df(s3_boto, "counterparty", new_df, processed_bucket)
+        dim_counterparty = result["dim_counterparty"]
+
+        ## assert structure
+        assert isinstance(result, dict)
+        assert "dim_counterparty" in result
+        assert not dim_counterparty.empty
+
+        expected_columns = [
+            "counterparty_id", "counterparty_legal_name", "counterparty_legal_address_line_1",
+            "counterparty_legal_address_line_2", "counterparty_legal_district", "counterparty_legal_city", 
+            "counterparty_legal_postal_code", "counterparty_legal_country", "counterparty_legal_phone_number"
+        ]
+        assert set(expected_columns).issubset(dim_counterparty.columns)
+        
+        
+        print("dim_counterparty>>>>>",dim_counterparty)
+        ## assert content 
+        # transformed_row_by_counterparty_id = dim_counterparty[dim_counterparty["counterparty_id"] == 1].iloc[0]
+        # transformed_row_by_counterparty_id = dim_counterparty[dim_counterparty["counterparty_id"] == 1].iloc[0]
+        # # print(transformed_row_by_counterparty_id)
+        # assert transformed_row_by_counterparty_id["counterparty_legal_name"] == "Fahey and Sons"
+        # assert transformed_row_by_counterparty_id["counterparty_legal_address_id"] == "15"
+
+
 
 
 class TestAppendJSONRaw:

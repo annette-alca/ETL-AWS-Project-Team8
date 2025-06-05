@@ -112,7 +112,7 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
                     "phone",
                 ],
             ]
-            dim_location.rename(columns={"address_id":"location_id"},in_place=True)
+            dim_location.rename(columns={"address_id":"location_id"},inplace=True)
             return {"dim_location": dim_location}
         
         case "counterparty":
