@@ -7,7 +7,23 @@ from decimal import Decimal
 # import dotenv  # for local runs
 
 def lambda_transform(events, context):
-    # extracting data from s3 and converting to df
+    """
+    AWS Lambda entry point for transforming newly ingested JSON data files into processed Parquet files
+    Args:
+        events (dict):
+            - 'timestamp': Event trigger time
+            - 'total_new_files': Count of new files
+            - 'new_keys': List of raw JSON file keys
+        context(None): AWS Lambda context object
+
+    Returns:
+        dict:
+            - 'message': Status message
+            - 'timestamp': Completion time
+            - 'total_new_files': Number of transformed files
+            - 'new_keys': List of new Parquet file keys
+    """
+
     if events["total_new_files"] == 0:
         return {
             "message": "completed transformation",
@@ -42,6 +58,18 @@ def lambda_transform(events, context):
     }
 
 def table_name_to_df(s3_client, table_name, bucket_name):
+    """
+    Loads a table's full historical JSON data from S3 into a pandas DataFrame
+
+    Args:
+        s3_client (Object): Boto3 S3 client for accessing the bucket
+        table_name (str): Name of the table to load
+        bucket_name (str): S3 bucket containing the db_state JSON files
+
+    Returns:
+        pandas.DataFrame: DataFrame containing the table's full data
+    """
+        
     """key is generated in next line"""
     new_json = s3_client.get_object(
         Bucket=bucket_name, Key=f"db_state/{table_name}_all.json"
@@ -53,20 +81,18 @@ def table_name_to_df(s3_client, table_name, bucket_name):
 
 
 def save_parquet_to_s3(bucket_name, transformed_dict, extract_time):
-    # need to change doc string
     """
-    Utility function, stores a parquet file in an S3 bucket.  Object key is derived from table_name and extract_time arguments
+    Saves transformed DataFrames as Parquet files to an S3 bucket with timestamped keys
 
     Args:
-        extract_client (Object): a boto3 client object to query the S3 bucket
-        bucket_name (Object): an S3 bucket name where the JSON object is stored_
-        new_dict_list (_type_): _description_
-        table_name (str): DB table name to be queried
-        extract_time (str) : UTC timestamp of query
+        bucket_name (str): Target S3 bucket for storing the Parquet files
+        transformed_dict (dict): Dictionary of table names to pandas DataFrames
+        extract_time (str): timestamp string used to structure S3 keys
 
     Returns:
-        key (str): S3 Object key derived from table_name and extract_time
+        list: List of S3 keys for the saved Parquet files
     """
+
     key_list =[]
     if not transformed_dict: #None from mvp_transform because table is part of backlog
         return key_list
@@ -81,6 +107,20 @@ def save_parquet_to_s3(bucket_name, transformed_dict, extract_time):
 
 
 def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
+    """
+    Applies table-specific transformation logic to raw DataFrame
+    Depending on the table name, this function merges the new data with reference data when required
+
+    Args:
+        s3_client (Object): S3 client for accessing reference and state files
+        table_name (str): Name of the table being transformed
+        new_df (pandas.DataFrame): Raw ingested data to transform
+        processed_bucket (str): S3 bucket containing historical processed data
+
+    Returns:
+        dict: Dictionary of transformed DataFrames keyed by their target table names 
+    """
+
     match table_name:
         case "staff":
             department_df = table_name_to_df(s3_client, "department", processed_bucket)
@@ -264,6 +304,21 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
 
 
 def append_json_raw_tables(s3_client, ingestion_bucket, new_json_key, processed_bucket):
+    """
+    Appends new ingested JSON data to existing processed data and updates the db_state in S3
+
+    Args:
+        s3_client (Object): S3 client for fetching and writing objects
+        ingestion_bucket (str): Name of the S3 bucket containing new raw data
+        new_json_key (str): Key of the new JSON file in the ingestion bucket
+        processed_bucket (str): Name of the S3 bucket to update with merged data
+
+    Returns:
+        tuple: (table_name, new_df)
+            - table_name (str): Extracted table name from the S3 key
+            - new_df (pandas.DataFrame): DataFrame created from the new JSON file
+    """
+
     table_name = new_json_key.split("/")[1]
     main_json_key_overwritten = f"db_state/{table_name}_all.json"
     new_json = s3_client.get_object(Bucket=ingestion_bucket, Key=new_json_key)
@@ -291,6 +346,7 @@ def append_json_raw_tables(s3_client, ingestion_bucket, new_json_key, processed_
 
 
 def backlog_transform_to_parquet():
+    # docstring may need to add later if required
     additional_tables = {
         "payment": ["fact_sales_order", "dim_date"],
         "payment_type": ["dim_date"],
