@@ -31,7 +31,6 @@ def aws_credentials():
 @pytest.fixture(scope='class')
 def s3_boto(aws_credentials):
     with mock_aws(aws_credentials):
-
         yield boto3.client('s3')
 
 
@@ -146,7 +145,6 @@ class TestMVPTransformDF:
         
         ## assert content 
         transformed_row_by_address_id = dim_location.iloc[1,:]
-        print(transformed_row_by_address_id)
         assert transformed_row_by_address_id["location_id"] == 2
         assert transformed_row_by_address_id["city"] == 'Aliso Viejo'
         assert dim_location.loc[1,"country"]=="San Marino"
@@ -193,22 +191,69 @@ class TestMVPTransformDF:
             "counterparty_legal_postal_code", "counterparty_legal_country", "counterparty_legal_phone_number"
         ]
         assert set(expected_columns).issubset(dim_counterparty.columns)
-        
-        
-        print("dim_counterparty>>>>>",dim_counterparty)
+
         ## assert content 
-        # transformed_row_by_counterparty_id = dim_counterparty[dim_counterparty["counterparty_id"] == 1].iloc[0]
-        # transformed_row_by_counterparty_id = dim_counterparty[dim_counterparty["counterparty_id"] == 1].iloc[0]
-        # # print(transformed_row_by_counterparty_id)
-        # assert transformed_row_by_counterparty_id["counterparty_legal_name"] == "Fahey and Sons"
-        # assert transformed_row_by_counterparty_id["counterparty_legal_address_id"] == "15"
+        assert dim_counterparty.loc[2, "counterparty_id"] == 3
+        assert dim_counterparty.loc[2, "counterparty_legal_address_line_1"] == "179 Alexie Cliffs"
+        assert dim_counterparty.loc[2, "counterparty_legal_phone_number"] == "9621 880720"
 
+    def test_transform_design_case(self, s3_boto, mock_s3_buckets):
+        processed_bucket = "processed-bucket"
 
+        with open("./tests/data/design.json", "r") as design_file:
+            design_body = json.load(design_file)
 
+        new_df = pd.DataFrame(design_body)
+
+        result = mvp_transform_df(s3_boto, "design", new_df, processed_bucket)
+        dim_design = result["dim_design"]
+
+        assert isinstance(result, dict)
+        assert "dim_design" in result
+        assert not dim_design.empty
+
+        expected_columns = [
+            "design_id", "design_name", "file_location", "file_name"
+        ]
+        
+        assert set(expected_columns).issubset(dim_design.columns)
+        assert dim_design.loc[0, "design_id"] == 8
+        assert dim_design.loc[0, "design_name"] == "Wooden"
+        assert dim_design.loc[5, "design_id"] == 10
+        assert dim_design.loc[4, "file_name"] == "plastic-20221206-bw3l.json"
+
+    def test_transform_currency_case(self, s3_boto, mock_s3_buckets):
+        processed_bucket = "processed-bucket"
+
+        with open("tests/data/currency.json") as currency_file:
+            currency_body = json.load(currency_file)
+
+        new_df = pd.DataFrame(currency_body)
+
+        result = mvp_transform_df(s3_boto, "currency", new_df, processed_bucket)
+        dim_currency = result["dim_currency"]
+
+        assert isinstance(result, dict)
+        assert "dim_currency" in result
+        assert not dim_currency.empty
+
+        expected_columns = ["currency_id", "currency_name", "currency_code"] 
+
+        assert set(expected_columns).issubset(dim_currency.columns)
+
+        assert dim_currency.loc[0, "currency_id"] == 1
+        assert dim_currency.loc[0, "currency_code"] == "GBP"
+        assert dim_currency.loc[0, "currency_name"] == "British pound"
+        assert dim_currency.loc[2, "currency_id"] == 3
+        assert dim_currency.loc[2, "currency_code"] == "EUR"
+        assert dim_currency.loc[2, "currency_name"] == "Euro"
+
+    def test_transform_sales_order_and_date_case(self, s3_boto, mock_s3_buckets):
+        pass     
 
 class TestAppendJSONRaw:
 
-    def test_append_json_raw_except_with_empty_processed_bucket(self, s3_boto,mock_s3_buckets):
+    def test_append_json_raw_except_with_empty_processed_bucket(self, s3_boto, mock_s3_buckets):
         new_json_key = 'dev/staff'
         processed_key = 'db_state/staff_all.json'  
 
