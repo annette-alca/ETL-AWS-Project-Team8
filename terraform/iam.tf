@@ -26,13 +26,13 @@ data "aws_iam_policy_document" "s3_data_policy_doc" {
   statement {
     effect = "Allow"
     actions = ["s3:*"]
-    resources = ["arn:aws:s3:::${aws_s3_bucket.ingestion_s3.bucket}/*"]
+    resources = ["arn:aws:s3:::${aws_s3_bucket.ingestion_s3.bucket}/*","arn:aws:s3:::${aws_s3_bucket.ingestion_s3.bucket}"]
   }
 
   statement {
     effect = "Allow"
     actions = ["s3:*"]
-    resources = ["arn:aws:s3:::${aws_s3_bucket.processed_s3.bucket}/*"]
+    resources = ["arn:aws:s3:::${aws_s3_bucket.processed_s3.bucket}/*","arn:aws:s3:::${aws_s3_bucket.processed_s3.bucket}"]
   }
 
   statement {
