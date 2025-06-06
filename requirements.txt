@@ -9,4 +9,4 @@ flake8
 black
 pytest-cov
 python-dotenv
-pyarrow 
+awswrangler
