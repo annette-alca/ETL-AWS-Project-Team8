@@ -4,6 +4,7 @@ from moto import mock_aws
 import pytest
 import boto3
 import os 
+import dotenv
 
 @pytest.fixture 
 def aws_credentials():
@@ -43,6 +44,16 @@ def test_parquet_to_df(s3_client_bucket_with_parquet_file):
     assert result.loc[0, "design_name"] == "Wooden"
 
 # function to insert df into warehouse using pg8000 
+
+@pytest.fixture
+def db():
+    dotenv.load_dotenv()
+    user = os.environ["LOCALUSER"]
+    database = os.environ["LOCALDB"]
+    password = os.environ["LOCALPASSWORD"]
+    
+    test_db = Connection(database=database, user=user, password=password)
+    test_db.run('DROP TABLE IF EXISTS ')
 
 def test_df_inserted_into_warehouse():
     pass 
