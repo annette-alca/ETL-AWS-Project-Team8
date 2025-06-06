@@ -71,7 +71,7 @@ def test_db():
                 phone varchar);""")
     return test_db
 
-def test_df_inserted_into_warehouse(test_db):
+def test_df_inserted_into_empty_warehouse_table(test_db):
     df = pd.read_parquet(f"tests/data/dim_location.parquet")
     insert_df_into_warehouse(test_db, df, "dim_location")
     result = test_db.run("SELECT * FROM dim_location;")
@@ -81,6 +81,7 @@ def test_df_inserted_into_warehouse(test_db):
     assert column_names[4] == "city"
     assert result[0][4] == "New Patienceburgh"
     assert result[1][4] == "Aliso Viejo"
+    assert len(result) == 30
     # print(result)
 
 
