@@ -298,9 +298,6 @@ class TestMVPTransformDF:
         assert fact_result.loc[0, 'counterparty_id'] == 20
         assert fact_result.loc[0, 'agreed_delivery_location_id'] == 24
 
-
-        print(dim_date_result.columns)
-
         dim_date_expected = ['date_id',
                              'year',
                              'month',
@@ -312,8 +309,6 @@ class TestMVPTransformDF:
 
 
         assert set(dim_date_expected).issubset(dim_date_result.columns)
-
-        print(dim_date_result.iloc[0,:])
 
         assert str(dim_date_result.loc[0, 'date_id']) == '2025-06-02 00:00:00'
         assert dim_date_result.loc[0, 'day_name'] == 'Monday'
