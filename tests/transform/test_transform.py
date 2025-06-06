@@ -31,7 +31,6 @@ def aws_credentials():
 @pytest.fixture(scope='class')
 def s3_boto(aws_credentials):
     with mock_aws(aws_credentials):
-
         yield boto3.client('s3')
 
 
@@ -43,20 +42,23 @@ def mock_s3_buckets(s3_boto):
     bucket_2 = "processed-bucket"
 
     key = "dev/staff"
-    
+    s3_boto.create_bucket(Bucket=bucket_1,
+                        CreateBucketConfiguration={"LocationConstraint":"eu-west-2"})
+    s3_boto.create_bucket(Bucket=bucket_2,
+                        CreateBucketConfiguration={"LocationConstraint":"eu-west-2"})
+
     with open("./tests/data/staff.json", "r") as jsonfile:
         body = json.dumps(json.load(jsonfile))          
-        s3_boto.create_bucket(Bucket=bucket_1,
-                            CreateBucketConfiguration={"LocationConstraint":"eu-west-2"})
-
+    
         s3_boto.put_object(Bucket=bucket_1, Key=key, Body=body.encode("utf-8"))
         # output = s3_boto.list_objects_v2(Bucket=bucket_1, Prefix=key)
-       
 
-    s3_boto.create_bucket(Bucket=bucket_2,
-                            CreateBucketConfiguration={"LocationConstraint":"eu-west-2"})
-    
-
+    with open("./tests/data/counterparty.json", "r") as jsonfile:
+        body = json.dumps(json.load(jsonfile))          
+        
+        s3_boto.put_object(Bucket=bucket_1, Key="dev/counterparty", Body=body.encode("utf-8"))
+        # output = s3_boto.list_objects_v2(Bucket=bucket_1, Prefix=key)
+        
 class TestMVPTransformDF:
 
     def test_transform_staff_case(self, s3_boto, mock_s3_buckets):
@@ -136,21 +138,122 @@ class TestMVPTransformDF:
         assert not dim_location.empty
 
         expected_columns = [
-            "address_id", "address_line_1", "address_line_2",
+            "location_id", "address_line_1", "address_line_2",
             "district", "city", "postal_code", "country", "phone"
         ]
         assert set(expected_columns).issubset(dim_location.columns)
+        
+        ## assert content 
+        transformed_row_by_address_id = dim_location.iloc[1,:]
+        assert transformed_row_by_address_id["location_id"] == 2
+        assert transformed_row_by_address_id["city"] == 'Aliso Viejo'
+        assert dim_location.loc[1,"country"]=="San Marino"
+
+
+    def test_transform_counterparty_case(self, s3_boto, mock_s3_buckets):
+        
+        ingestion_bucket = "ingestion-bucket"
+        processed_bucket = "processed-bucket"
+        counterparty_key = "dev/counterparty"
+
+        ## upload address.json to processed bucket
+        with open("./tests/data/address.json", "r") as jsonfile:
+            address_list = json.load(jsonfile)
+
+        address_dict = {}
+        for i in range(len(address_list)):
+            address_dict[i] = address_list[i]
+
+        address_data = json.dumps(address_dict)
+        
+        s3_boto.put_object(
+            Bucket=processed_bucket,
+            Key="db_state/address_all.json",
+            Body=address_data.encode("utf-8")
+        )
+
+        ## load counterparty.json from bucket 
+        response = s3_boto.get_object(Bucket=ingestion_bucket, Key=counterparty_key)
+        new_df = pd.read_json(StringIO(response["Body"].read().decode("utf-8")))    
+
+        ## run transformation
+        result = mvp_transform_df(s3_boto, "counterparty", new_df, processed_bucket)
+        dim_counterparty = result["dim_counterparty"]
+
+        ## assert structure
+        assert isinstance(result, dict)
+        assert "dim_counterparty" in result
+        assert not dim_counterparty.empty
+
+        expected_columns = [
+            "counterparty_id", "counterparty_legal_name", "counterparty_legal_address_line_1",
+            "counterparty_legal_address_line_2", "counterparty_legal_district", "counterparty_legal_city", 
+            "counterparty_legal_postal_code", "counterparty_legal_country", "counterparty_legal_phone_number"
+        ]
+        assert set(expected_columns).issubset(dim_counterparty.columns)
 
         ## assert content 
-        transformed_row_by_address_id = dim_location[dim_location["address_id"] == 1].iloc[0]
-        print(transformed_row_by_address_id ,'<<<<<<<< ROW BY ID<<<<<<')
-        assert transformed_row_by_address_id["city"] == 'New Patienceburgh'
-        print(transformed_row_by_address_id['city'] , '<<<<<CITY<<<<<<')
+        assert dim_counterparty.loc[2, "counterparty_id"] == 3
+        assert dim_counterparty.loc[2, "counterparty_legal_address_line_1"] == "179 Alexie Cliffs"
+        assert dim_counterparty.loc[2, "counterparty_legal_phone_number"] == "9621 880720"
 
+    def test_transform_design_case(self, s3_boto, mock_s3_buckets):
+        processed_bucket = "processed-bucket"
+
+        with open("./tests/data/design.json", "r") as design_file:
+            design_body = json.load(design_file)
+
+        new_df = pd.DataFrame(design_body)
+
+        result = mvp_transform_df(s3_boto, "design", new_df, processed_bucket)
+        dim_design = result["dim_design"]
+
+        assert isinstance(result, dict)
+        assert "dim_design" in result
+        assert not dim_design.empty
+
+        expected_columns = [
+            "design_id", "design_name", "file_location", "file_name"
+        ]
+        
+        assert set(expected_columns).issubset(dim_design.columns)
+        assert dim_design.loc[0, "design_id"] == 8
+        assert dim_design.loc[0, "design_name"] == "Wooden"
+        assert dim_design.loc[5, "design_id"] == 10
+        assert dim_design.loc[4, "file_name"] == "plastic-20221206-bw3l.json"
+
+    def test_transform_currency_case(self, s3_boto, mock_s3_buckets):
+        processed_bucket = "processed-bucket"
+
+        with open("tests/data/currency.json") as currency_file:
+            currency_body = json.load(currency_file)
+
+        new_df = pd.DataFrame(currency_body)
+
+        result = mvp_transform_df(s3_boto, "currency", new_df, processed_bucket)
+        dim_currency = result["dim_currency"]
+
+        assert isinstance(result, dict)
+        assert "dim_currency" in result
+        assert not dim_currency.empty
+
+        expected_columns = ["currency_id", "currency_name", "currency_code"] 
+
+        assert set(expected_columns).issubset(dim_currency.columns)
+
+        assert dim_currency.loc[0, "currency_id"] == 1
+        assert dim_currency.loc[0, "currency_code"] == "GBP"
+        assert dim_currency.loc[0, "currency_name"] == "British pound"
+        assert dim_currency.loc[2, "currency_id"] == 3
+        assert dim_currency.loc[2, "currency_code"] == "EUR"
+        assert dim_currency.loc[2, "currency_name"] == "Euro"
+
+    def test_transform_sales_order_and_date_case(self, s3_boto, mock_s3_buckets):
+        pass     
 
 class TestAppendJSONRaw:
 
-    def test_append_json_raw_except_with_empty_processed_bucket(self, s3_boto,mock_s3_buckets):
+    def test_append_json_raw_except_with_empty_processed_bucket(self, s3_boto, mock_s3_buckets):
         new_json_key = 'dev/staff'
         processed_key = 'db_state/staff_all.json'  
 
