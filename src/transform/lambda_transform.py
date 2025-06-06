@@ -152,7 +152,7 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
                     "phone",
                 ],
             ]
-            dim_location.rename(columns={"address_id":"location_id"},in_place=True)
+            dim_location.rename(columns={"address_id":"location_id"},inplace=True)
             return {"dim_location": dim_location}
         
         case "counterparty":
@@ -195,8 +195,8 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
                 :, ["design_id", "design_name", "file_location", "file_name"]
             ]
             return {"dim_design": dim_design}
+        
         case "currency":
-            dim_currency = new_df.loc[:, ["currency_id", "currency_code"]]
             currency_dict = {
                 "GBP": "British pound",
                 "USD": "US dollar",
@@ -207,6 +207,7 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
                 new_df.loc[row, "currency_name"] = currency_dict[
                     new_df.loc[row, "currency_code"]
                 ]
+            dim_currency = new_df.loc[:, ["currency_id", "currency_code", "currency_name"]]
             return {"dim_currency": dim_currency}
 
         case "sales_order":
