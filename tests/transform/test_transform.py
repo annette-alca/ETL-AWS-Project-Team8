@@ -47,48 +47,68 @@ def mock_s3_buckets(s3_boto):
     s3_boto.create_bucket(Bucket=bucket_2,
                         CreateBucketConfiguration={"LocationConstraint":"eu-west-2"})
 
+    #INGESTION UPLOADS
+
     with open("./tests/data/staff.json", "r") as jsonfile:
         body = json.dumps(json.load(jsonfile))          
     
         s3_boto.put_object(Bucket=bucket_1, Key=key, Body=body.encode("utf-8"))
         # output = s3_boto.list_objects_v2(Bucket=bucket_1, Prefix=key)
+    
+    with open("./tests/data/department.json", "r") as jsonfile:
+        body = json.dumps(json.load(jsonfile))          
+    
+        s3_boto.put_object(Bucket=bucket_1, Key="dev/department", Body=body.encode("utf-8"))
+
+    with open("./tests/data/address.json", "r") as jsonfile:
+        body = json.dumps(json.load(jsonfile))          
+    
+        s3_boto.put_object(Bucket=bucket_1, Key="dev/address", Body=body.encode("utf-8"))
 
     with open("./tests/data/counterparty.json", "r") as jsonfile:
         body = json.dumps(json.load(jsonfile))          
-        
+    
         s3_boto.put_object(Bucket=bucket_1, Key="dev/counterparty", Body=body.encode("utf-8"))
+
+
         # output = s3_boto.list_objects_v2(Bucket=bucket_1, Prefix=key)
         
+    #PROCESS BUCKET UPLOADS
+
+    # with open("./tests/data/department_all.json", "r") as jsonfile:
+    #     body = json.dumps(json.load(jsonfile))          
+        
+    #     s3_boto.put_object(Bucket=bucket_2, Key="db_state/department_all.json", Body=body.encode("utf-8"))
+
+    # with open("./tests/data/counterparty_all.json", "r") as jsonfile:
+    #     body = json.dumps(json.load(jsonfile))          
+        
+    #     s3_boto.put_object(Bucket=bucket_2, Key="db_state/counterparty_all.json", Body=body.encode("utf-8"))
+
+    # with open("./tests/data/staff_all.json", "r") as jsonfile:
+    #     body = json.dumps(json.load(jsonfile))          
+        
+    #     s3_boto.put_object(Bucket=bucket_2, Key="db_state/staff_all.json", Body=body.encode("utf-8"))
+
+    # with open("./tests/data/address_all.json", "r") as jsonfile:
+    #     body = json.dumps(json.load(jsonfile))          
+        
+    #     s3_boto.put_object(Bucket=bucket_2, Key="db_state/address_all.json", Body=body.encode("utf-8"))
+
 class TestMVPTransformDF:
 
     def test_transform_staff_case(self, s3_boto, mock_s3_buckets):
         ingestion_bucket = "ingestion-bucket"
         processed_bucket = "processed-bucket"
         staff_key = "dev/staff"
+        department_key = "dev/department"
 
-        ## upload department.json to processed bucket
-
-        with open("./tests/data/department.json", "r") as jsonfile:
-            department_list = json.load(jsonfile)
-
-        department_dict = {}
-        for i in range(len(department_list)):
-            department_dict[str(i)] = department_list[i]
-
-        department_data = json.dumps(department_dict)
-
-        s3_boto.put_object(
-            Bucket=processed_bucket,
-            Key="db_state/department_all.json",
-            Body=department_data.encode("utf-8")
-        )
-
-        ## load staff.json from bucket 
-        response = s3_boto.get_object(Bucket=ingestion_bucket, Key=staff_key)
-        new_df = pd.read_json(StringIO(response["Body"].read().decode("utf-8")))
+        append_json_raw_tables(s3_boto, ingestion_bucket, department_key, processed_bucket)
+        table_name, new_df = append_json_raw_tables(s3_boto, ingestion_bucket,staff_key, processed_bucket)
 
         ## run transformation
-        result = mvp_transform_df(s3_boto, "staff", new_df, processed_bucket)
+        result = mvp_transform_df(s3_boto, table_name , new_df, processed_bucket)
+        
         dim_staff = result["dim_staff"]
 
         ## assert
@@ -107,29 +127,14 @@ class TestMVPTransformDF:
         assert transformed_row_by_staff_id["department_name"] == "Purchasing"
 
     def test_transform_address_case(self, s3_boto, mock_s3_buckets):
+        ingestion_bucket = "ingestion-bucket"
         processed_bucket = "processed-bucket"
-
-        ## upload address.json to processed bucket
-        with open("./tests/data/address.json", "r") as jsonfile:
-            address_list = json.load(jsonfile)
-
-        address_dict = {}
-        for i in range(len(address_list)):
-            address_dict[str(i)] = address_list[i]
-
-        address_data = json.dumps(address_dict)
-
-        s3_boto.put_object(
-            Bucket=processed_bucket,
-            Key="db_state/address_all.json",
-            Body=address_data.encode("utf-8")
-        )
-
-        ## load the address file on the go
-        new_df = pd.DataFrame(address_list)
+        address_key = "dev/address"
+        
+        table_name, new_df = append_json_raw_tables(s3_boto, ingestion_bucket,address_key, processed_bucket)
 
         ## run transformation
-        result = mvp_transform_df(s3_boto, "address", new_df, processed_bucket)
+        result = mvp_transform_df(s3_boto, table_name, new_df, processed_bucket)
         dim_location = result["dim_location"]
 
         ## assert structure
@@ -155,29 +160,11 @@ class TestMVPTransformDF:
         ingestion_bucket = "ingestion-bucket"
         processed_bucket = "processed-bucket"
         counterparty_key = "dev/counterparty"
-
-        ## upload address.json to processed bucket
-        with open("./tests/data/address.json", "r") as jsonfile:
-            address_list = json.load(jsonfile)
-
-        address_dict = {}
-        for i in range(len(address_list)):
-            address_dict[i] = address_list[i]
-
-        address_data = json.dumps(address_dict)
         
-        s3_boto.put_object(
-            Bucket=processed_bucket,
-            Key="db_state/address_all.json",
-            Body=address_data.encode("utf-8")
-        )
-
-        ## load counterparty.json from bucket 
-        response = s3_boto.get_object(Bucket=ingestion_bucket, Key=counterparty_key)
-        new_df = pd.read_json(StringIO(response["Body"].read().decode("utf-8")))    
+        table_name, new_df = append_json_raw_tables(s3_boto, ingestion_bucket,counterparty_key, processed_bucket)
 
         ## run transformation
-        result = mvp_transform_df(s3_boto, "counterparty", new_df, processed_bucket)
+        result = mvp_transform_df(s3_boto, table_name, new_df, processed_bucket)
         dim_counterparty = result["dim_counterparty"]
 
         ## assert structure
@@ -264,7 +251,7 @@ class TestAppendJSONRaw:
   
         processed_obj = s3_boto.get_object(Bucket="processed-bucket", Key=processed_key)
         processed_json = json.loads(processed_obj["Body"].read().decode("utf-8"))
-        processed_json_0 = processed_json['0']
+        processed_json_0 = processed_json[0]
 
         # Assert new key has been added to bucket
         assert s3_boto.list_objects_v2(Bucket='processed-bucket')['KeyCount'] == 1
@@ -286,8 +273,8 @@ class TestAppendJSONRaw:
 
         processed_obj = s3_boto.get_object(Bucket="processed-bucket", Key=processed_key)
         processed_json = json.loads(processed_obj["Body"].read().decode("utf-8"))
-        processed_json_0 = processed_json['0']
-        processed_json_4 = processed_json['4']
+        processed_json_0 = processed_json[0]
+        processed_json_4 = processed_json[4]
 
         # Assert that processed is longer than new df
         assert len(processed_json) > len(result[1]) 
