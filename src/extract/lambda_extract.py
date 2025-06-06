@@ -60,7 +60,7 @@ def get_last_timestamps(extract_client, bucket_name):
         key (str): S3 object key reference
     """
 
-    key = "dev/extraction_times/timestamps.json"
+    key = "db_state/extraction_timestamps.json"
     try:   
         body = extract_client.get_object(Bucket=bucket_name, Key=key)
         last_timestamp_dict = json.loads(body["Body"].read().decode("utf-8"))
@@ -100,6 +100,8 @@ def get_data(db, table_name, last_extract=None):
     
 
 def save_to_s3(extract_client, bucket_name, new_dict_list, table_name, extract_time):
+
+
     """
     Utility function, stores a JSON object in an S3 bucket.  Object key is derived from table_name and extract_time arguments
 
@@ -113,7 +115,7 @@ def save_to_s3(extract_client, bucket_name, new_dict_list, table_name, extract_t
     Returns:
         key (str): S3 Object key derived from table_name and extract_time
     """
-
+    
     date, time = extract_time.split('T')
     key = f"dev/{table_name}/{date}/{table_name}_{time}.json"
 
@@ -139,7 +141,6 @@ def create_conn(extract_client):
     database = os.environ["DBNAME"]
     dbhost = os.environ["HOST"]
     dbport = os.environ["PORT"]
-    # password = os.environ["DBPASSWORD"]
     password = get_db_password(extract_client)
     return Connection(
         database=database, user=user, password=password, host=dbhost, port=dbport
