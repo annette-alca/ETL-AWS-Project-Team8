@@ -72,7 +72,7 @@ run-pip-audit:
 
 ## Run the unit tests $(call execute_in_env, PYTHONPATH=${PYTHONPATH} pytest tests/load/* -vvvrP) ($(call execute_in_env, PYTHONPATH=${PYTHONPATH} pytest tests/transform/* -vvvrP)
 unit-test:
-	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} pytest tests/extract/* -vvvrP)
+	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} pytest tests/*/* -vvvrP)
 
 ## Run the coverage check 
 check-coverage:
