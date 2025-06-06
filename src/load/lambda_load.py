@@ -4,13 +4,16 @@ from pg8000.native import Connection
 import boto3
 import os
 import json
-import dotenv
+from pprint import pprint # for local viewing
+import dotenv #local implementation
 
 def lambda_load(events, context):
     processed_bucket = os.environ["PROCESSED_S3"]
     s3_client = boto3.client('s3')
     for file_key in events["new_keys"]:
         df = parquet_to_df(file_key, processed_bucket)
+        table_name = file_key.split('/')[1]
+        insert_df_into_warehouse(db, df, table_name)
 
 def create_conn(extract_client):
     """
@@ -55,17 +58,23 @@ def parquet_to_df(file_key, processed_bucket):
     return df
 
 def insert_df_into_warehouse(db, df, table_name):
+    # print(df)
     query = f"INSERT INTO {table_name}"
     column_string = ', '.join(df.columns)
     query += f"({column_string}) VALUES"
     for row in range(len(df)):
         query += '('
-        row_string = ', '.join([str(item) for item in df.loc[row,:]])
-        row_string = row_string.replace("'","''")
-        query += row_string
-        query += '),'
+        for item in df.loc[row,:]:
+            if type(item) in [float,int]:
+                query += str({item}) + ','
+            elif type(item) == str:
+                item = item.replace("'","''") #some addresses have '
+                query += f"'{item}'" +','
+            else: #for datetime
+                query += f"'{item}'" + ','
+        query = query[:-1] + '),'
     query = query[:-1] + ';'
-    print(query)
+    # print(query)
     db.run(query)
     
 

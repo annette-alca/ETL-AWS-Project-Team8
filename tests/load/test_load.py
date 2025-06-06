@@ -77,10 +77,11 @@ def test_df_inserted_into_warehouse(test_db):
     result = test_db.run("SELECT * FROM dim_location;")
     column_names = [column["name"] for column in test_db.columns]
     assert column_names[0] == "location_id"
+    assert result[0][0] == 1
     assert column_names[4] == "city"
     assert result[0][4] == "New Patienceburgh"
     assert result[1][4] == "Aliso Viejo"
-    print(result)
+    # print(result)
 
 
 
