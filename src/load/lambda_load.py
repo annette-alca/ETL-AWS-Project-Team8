@@ -53,3 +53,20 @@ def get_db_password(extract_client):
 def parquet_to_df(file_key, processed_bucket):
     df = wr.s3.read_parquet(path=f's3://{processed_bucket}/{file_key}')
     return df
+
+def insert_df_into_warehouse(db, df, table_name):
+    query = f"INSERT INTO {table_name}"
+    column_string = ', '.join(df.columns)
+    query += f"({column_string}) VALUES"
+    for row in range(len(df)):
+        query += '('
+        row_string = ', '.join([str(item) for item in df.loc[row,:]])
+        row_string = row_string.replace("'","''")
+        query += row_string
+        query += '),'
+    query = query[:-1] + ';'
+    print(query)
+    db.run(query)
+    
+
+
