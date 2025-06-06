@@ -184,8 +184,6 @@ class TestMVPTransformDF:
         ingestion_bucket = "ingestion-bucket"
         processed_bucket = "processed-bucket"
         counterparty_key = "dev/counterparty"
-        
-        table_name, new_df = append_json_raw_tables(s3_boto, ingestion_bucket,counterparty_key, processed_bucket)
 
         ## run transformation
         result = mvp_transform_df(s3_boto, table_name, new_df, processed_bucket)

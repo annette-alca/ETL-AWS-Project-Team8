@@ -199,6 +199,7 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
             dim_design = new_df.loc[
                 :, ["design_id", "design_name", "file_location", "file_name"]
             ]
+            dim_design.sort_values(by="design_id", inplace=True)
             return {"dim_design": dim_design}
         
         case "currency":
