@@ -12,17 +12,17 @@ def db():
     yield db
     db.close()
 
-# @pytest.fixture(scope='class')
-# def aws_credentials():
-#     os.environ["aws_access_key_id"]="Test"
-#     os.environ["aws_secret_access_key"]="test"
-#     os.environ["aws_session_token"]="test"
-#     os.environ["aws_security_token"]="test"
-#     os.environ["aws_region"]="eu-west-2"
+@pytest.fixture(scope='class')
+def aws_credentials():
+    os.environ["aws_access_key_id"]="Test"
+    os.environ["aws_secret_access_key"]="test"
+    os.environ["aws_session_token"]="test"
+    os.environ["aws_security_token"]="test"
+    os.environ["aws_region"]="eu-west-2"
 
 @pytest.fixture
-def s3_client():
-    with mock_aws():
+def s3_client(aws_credentials):
+    with mock_aws(aws_credentials):
         yield boto3.client('s3')
 
 @pytest.fixture
@@ -62,11 +62,6 @@ def test_get_data_handles_DataBaseError(db):
     assert new_dict_list == []
     assert extract_time == last_extract
 
-@pytest.mark.skip
-def test_transactions_db_for_updates(db):
-    new_dict_list, extract_time = get_data(db, "transaction", "2025-05-29T14:01")
-    assert isinstance(new_dict_list, list)
-    assert len(new_dict_list) == 0
 
 def test_save_to_s3_when_sql_table_has_values(s3_client_with_bucket):
     extract_client, bucket_name = s3_client_with_bucket
