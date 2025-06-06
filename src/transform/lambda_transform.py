@@ -1,9 +1,11 @@
 import boto3
 import pandas as pd
 from datetime import datetime, UTC
-from io import StringIO
 import os
 from decimal import Decimal
+import awswrangler as wr
+import json
+
 # import dotenv  # for local runs
 
 def lambda_transform(events, context):
@@ -71,12 +73,11 @@ def table_name_to_df(s3_client, table_name, bucket_name):
     """
         
     """key is generated in next line"""
-    new_json = s3_client.get_object(
-        Bucket=bucket_name, Key=f"db_state/{table_name}_all.json"
-    )
-    new_df = pd.read_json(
-        StringIO(new_json["Body"].read().decode("utf-8")), orient="index"
-    )
+    key = f"db_state/{table_name}_all.json"
+    new_object = s3_client.get_object(Bucket=bucket_name, Key=key)
+    new_json = json.loads(new_object["Body"].read().decode("utf-8"))
+    new_df = pd.DataFrame.from_dict(data=new_json, orient='columns')
+
     return new_df
 
 
@@ -99,8 +100,11 @@ def save_parquet_to_s3(bucket_name, transformed_dict, extract_time):
     for transform_name, new_df in transformed_dict.items():
         date, time = extract_time.split("T")
         key = f"dev/{transform_name}/{date}/{transform_name}_{time}.parquet"
-        new_df.to_parquet(
-            f"s3://{bucket_name}/{key}"
+
+        wr.s3.to_parquet(
+            df=new_df,
+            path=f"s3://{bucket_name}/{key}",
+            dataset=False
         )
         key_list.append(key)
     return key_list
@@ -190,6 +194,7 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
                 "counterparty_legal_phone_number",
             ]
             return {"dim_counterparty": dim_counterparty}
+
         case "design":
             dim_design = new_df.loc[
                 :, ["design_id", "design_name", "file_location", "file_name"]
@@ -217,12 +222,15 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
                 "agreed_payment_date",
             ]:
                 new_df[date_col] = new_df[date_col].astype(str)
+
             new_df[["created_date", "created_time"]] = new_df["created_at"].str.split(
-                " ", n=1, expand=True
+                "T", n=1, expand=True
             )
+        
             new_df[["last_updated_date", "last_updated_time"]] = new_df[
                 "last_updated"
             ].str.split("T", n=1, expand=True)
+
 
             fact_sales_order = new_df.loc[
                 :,
@@ -257,11 +265,13 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
             )
             #below merging with dbstate Series main_dates
             try:
-                main_dates = table_name_to_df(s3_client, "date", processed_bucket)
-                main_set = set(main_dates[0])
+                new_object = s3_client.get_object(Bucket=processed_bucket, Key="db_state/date_all.json")
+                dates_dict = json.loads(new_object["Body"].read().decode("utf-8"))
+                main_dates = dates_dict.values()
+
+                main_set = set(main_dates)
                 new_set = set(new_dates)
                 unique_new_set = new_set.difference(main_set)
-                
 
                 if len(unique_new_set) == 0: #no nwq unique dates, just return sales data
                     return {"fact_sales_order": fact_sales_order}
@@ -274,16 +284,7 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
                 unique_new_dates = new_dates.drop_duplicates(ignore_index=True)
                 merged_dates = unique_new_dates.copy()
 
-
-            json_buffer = StringIO()
-            merged_dates.to_json(
-                json_buffer, indent=2, orient="index", default_handler=serialise_object
-            )
-            s3_client.put_object(
-                Bucket=processed_bucket,
-                Body=json_buffer.getvalue(),
-                Key="db_state/date_all.json"
-            )
+            wr.s3.to_json(merged_dates, path=f"s3://{processed_bucket}/db_state/date_all.json")
 
             dim_date = pd.DataFrame()
             dim_date["date_str"] = unique_new_dates
@@ -321,9 +322,14 @@ def append_json_raw_tables(s3_client, ingestion_bucket, new_json_key, processed_
     """
 
     table_name = new_json_key.split("/")[1]
+    print("table name before getting ingested file",table_name)
+
     main_json_key_overwritten = f"db_state/{table_name}_all.json"
-    new_json = s3_client.get_object(Bucket=ingestion_bucket, Key=new_json_key)
-    new_df = pd.read_json(StringIO(new_json["Body"].read().decode("utf-8")))
+    new_object = s3_client.get_object(Bucket=ingestion_bucket, Key=new_json_key)
+    new_json = json.loads(new_object["Body"].read().decode("utf-8"))
+    new_df = pd.DataFrame.from_dict(data=new_json, orient='columns')
+    print ("this is the new df", new_df.head(10))
+    
 
     try:
         main_df = table_name_to_df(s3_client, table_name, processed_bucket)
@@ -331,18 +337,14 @@ def append_json_raw_tables(s3_client, ingestion_bucket, new_json_key, processed_
     except s3_client.exceptions.NoSuchKey:
         merged_df = new_df.copy()
 
-    json_buffer = StringIO()
+    print("this is the merged df", merged_df.head(10))
 
-    merged_df.to_json(
-        json_buffer, indent=2, orient="index", default_handler=serialise_object
-    )
-
-    s3_client.put_object(
-        Bucket=processed_bucket,
-        Body=json_buffer.getvalue(),
-        Key=main_json_key_overwritten,
-    )
-
+    df_dict = merged_df.T.to_dict()
+    df_list = list(df_dict.values())
+    
+    s3_client.put_object(Bucket=processed_bucket, Body=json.dumps(df_list, default=serialise_object, indent=2), 
+            Key=main_json_key_overwritten)
+  
     return (table_name, new_df)
 
 
@@ -376,29 +378,15 @@ def serialise_object(obj):
     raise TypeError("Type not serialisable")
 
 
-if __name__ == "__main__":
-    events = {
-  "message": "completed ingestion",
-  "timestamp": "2025-06-04T12:25:43.983758",
-  "total_new_files": 3,
-  "new_keys": ["dev/transaction/2025-06-04/transaction_10:04:38.826283.json",
-               "dev/sales_order/2025-06-04/sales_order_09:44:39.566927.json",
-               "dev/staff/2025-06-02/staff_11:12:22.779187.json"
-                ]
-}
-    print(lambda_transform(events, None))
+# if __name__ == "__main__":
+#     events = {
+#   "message": "completed ingestion",
+#   "timestamp": "2025-06-05T10:45:00.5",
+#   "total_new_files": 4,
+#   "new_keys": []
+# }
+#     pprint(lambda_transform(events, None))
 
-
-'''"dev/address/2025-05-30/address_11:24:04.260569.json",
-                    "dev/counterparty/2025-05-29/counterparty_11:40:56.079206.json",
-                    "dev/currency/2025-05-29/currency_11:40:56.166425.json",
-                    "dev/department/2025-05-29/department_11:40:56.242970.json",
-                    "dev/design/2025-05-29/design_11:40:56.408504.json",
-                    "dev/payment/2025-05-29/payment_11:40:57.662024.json",
-                    "dev/payment_type/2025-05-29/payment_type_11:41:04.860129.json",
-                    "dev/sales_order/2025-06-02/sales_order_09:46:02.338097.json",
-                    "dev/staff/2025-05-29/staff_11:41:07.526864.json",
-                    "dev/transaction/2025-05-29/transaction_11:41:08.378130.json"'''
 
 
 
