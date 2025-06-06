@@ -174,7 +174,7 @@ class TestMVPTransformDF:
 
         ## load counterparty.json from bucket 
         response = s3_boto.get_object(Bucket=ingestion_bucket, Key=counterparty_key)
-        new_df = pd.read_json(StringIO(response["Body"].read().decode("utf-8")))    
+        new_df = pd.read_json(StringIO(response["Body"].read().decode("utf-8")))   
 
         ## run transformation
         result = mvp_transform_df(s3_boto, "counterparty", new_df, processed_bucket)
