@@ -69,6 +69,11 @@ def mock_s3_buckets(s3_boto):
     
         s3_boto.put_object(Bucket=bucket_1, Key="dev/counterparty", Body=body.encode("utf-8"))
 
+    with open("./tests/data/sales_order.json", "r") as jsonfile:
+        body = json.dumps(json.load(jsonfile))          
+    
+        s3_boto.put_object(Bucket=bucket_1, Key="dev/sales_order", Body=body.encode("utf-8"))
+
 class TestAppendJSONRaw:
 
     def test_append_json_raw_except_with_empty_processed_bucket(self, s3_boto, mock_s3_buckets):
@@ -254,6 +259,70 @@ class TestMVPTransformDF:
         assert dim_currency.loc[2, "currency_code"] == "EUR"
         assert dim_currency.loc[2, "currency_name"] == "Euro"
 
-    def test_transform_sales_order_and_date_case(self, s3_boto, mock_s3_buckets):
-        pass     
+    def test_transform_sales_order_and_date_case(self, s3_boto, mock_s3_buckets):        
+        ingestion_bucket = "ingestion-bucket"
+        processed_bucket = "processed-bucket"
+        sales_key = "dev/sales_order"
+        
+        table_name, new_df = append_json_raw_tables(s3_boto, ingestion_bucket, sales_key, processed_bucket)
+
+        ## run transformation
+        result = mvp_transform_df(s3_boto, table_name, new_df, processed_bucket)
+        
+        assert len(result) == 2
+        fact_result = result['fact_sales_order']
+        dim_date_result = result['dim_date']
+
+        fact_cols_expected = [
+                    "sales_order_id",
+                    "created_date",
+                    "created_time",
+                    "last_updated_date",
+                    "last_updated_time",
+                    "sales_staff_id",
+                    "counterparty_id",
+                    "units_sold",
+                    "unit_price",
+                    "currency_id",
+                    "design_id",
+                    "agreed_payment_date",
+                    "agreed_delivery_date",
+                    "agreed_delivery_location_id",
+                ]
+        
+        assert set(fact_cols_expected).issubset(fact_result.columns)
+
+        assert fact_result.loc[0, 'sales_order_id'] == 14454
+        assert fact_result.loc[0, 'design_id'] == 203
+        assert fact_result.loc[0, 'sales_staff_id'] == 7
+        assert fact_result.loc[0, 'counterparty_id'] == 20
+        assert fact_result.loc[0, 'agreed_delivery_location_id'] == 24
+
+
+        print(dim_date_result.columns)
+
+        dim_date_expected = ['date_id',
+                             'year',
+                             'month',
+                             'day',
+                             'day_of_week',
+                             'day_name',
+                             'month_name',
+                             'quarter']
+
+
+        assert set(dim_date_expected).issubset(dim_date_result.columns)
+
+        print(dim_date_result.iloc[0,:])
+
+        assert str(dim_date_result.loc[0, 'date_id']) == '2025-06-02 00:00:00'
+        assert dim_date_result.loc[0, 'day_name'] == 'Monday'
+        assert dim_date_result.loc[0, 'month'] == 6
+        assert dim_date_result.loc[0, 'quarter'] == 2
+        assert dim_date_result.loc[0, 'month_name'] == 'June'
+
+
+
+   
+    
 
