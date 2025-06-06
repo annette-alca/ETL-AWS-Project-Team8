@@ -33,7 +33,6 @@ def s3_boto(aws_credentials):
     with mock_aws(aws_credentials):
         yield boto3.client('s3')
 
-
 @pytest.fixture(scope='class')
 def mock_s3_buckets(s3_boto):
     """Create ingestion and processed buckets for test functions"""
@@ -70,30 +69,50 @@ def mock_s3_buckets(s3_boto):
     
         s3_boto.put_object(Bucket=bucket_1, Key="dev/counterparty", Body=body.encode("utf-8"))
 
+class TestAppendJSONRaw:
 
-        # output = s3_boto.list_objects_v2(Bucket=bucket_1, Prefix=key)
-        
-    #PROCESS BUCKET UPLOADS
+    def test_append_json_raw_except_with_empty_processed_bucket(self, s3_boto, mock_s3_buckets):
+        new_json_key = 'dev/staff'
+        processed_key = 'db_state/staff_all.json'  
 
-    # with open("./tests/data/department_all.json", "r") as jsonfile:
-    #     body = json.dumps(json.load(jsonfile))          
-        
-    #     s3_boto.put_object(Bucket=bucket_2, Key="db_state/department_all.json", Body=body.encode("utf-8"))
+        # Assert bucket is empty before test
+        assert s3_boto.list_objects_v2(Bucket='processed-bucket')['KeyCount'] == 0 
 
-    # with open("./tests/data/counterparty_all.json", "r") as jsonfile:
-    #     body = json.dumps(json.load(jsonfile))          
-        
-    #     s3_boto.put_object(Bucket=bucket_2, Key="db_state/counterparty_all.json", Body=body.encode("utf-8"))
+        result = append_json_raw_tables(s3_boto, 'ingestion-bucket', new_json_key, 'processed-bucket')
+  
+        processed_obj = s3_boto.get_object(Bucket="processed-bucket", Key=processed_key)
+        processed_json = json.loads(processed_obj["Body"].read().decode("utf-8"))
+        processed_json_0 = processed_json[0]
 
-    # with open("./tests/data/staff_all.json", "r") as jsonfile:
-    #     body = json.dumps(json.load(jsonfile))          
-        
-    #     s3_boto.put_object(Bucket=bucket_2, Key="db_state/staff_all.json", Body=body.encode("utf-8"))
+        # Assert new key has been added to bucket
+        assert s3_boto.list_objects_v2(Bucket='processed-bucket')['KeyCount'] == 1
+        # Assert length of dataframe 
+        assert len(result[1]) == 4
+        # Assert new_df and merged df have the same data
+        assert ((result[1].iloc[0]['first_name'])) == processed_json_0['first_name']
+        assert len(processed_json) == len(result[1]) # 4
 
-    # with open("./tests/data/address_all.json", "r") as jsonfile:
-    #     body = json.dumps(json.load(jsonfile))          
-        
-    #     s3_boto.put_object(Bucket=bucket_2, Key="db_state/address_all.json", Body=body.encode("utf-8"))
+
+    def test_append_json_raw_with_existing_data(self, s3_boto,mock_s3_buckets):
+        new_json_key = 'dev/staff'
+        processed_key = 'db_state/staff_all.json'
+        with open("./tests/data/staff_add.json", "r") as jsonfile:
+            body = json.dumps(json.load(jsonfile))
+            s3_boto.put_object(Bucket='ingestion-bucket', Key=new_json_key, Body=body.encode("utf-8"))
+
+        result = append_json_raw_tables(s3_boto, 'ingestion-bucket', new_json_key, 'processed-bucket')
+
+        processed_obj = s3_boto.get_object(Bucket="processed-bucket", Key=processed_key)
+        processed_json = json.loads(processed_obj["Body"].read().decode("utf-8"))
+        processed_json_0 = processed_json[0]
+        processed_json_4 = processed_json[4]
+
+        # Assert that processed is longer than new df
+        assert len(processed_json) > len(result[1]) 
+        # Assert length of processed data has increased        
+        assert len(processed_json) > 4
+        # Assert that first row of new df is same as relative row in processed
+        assert ((result[1].iloc[0]['first_name'])) == processed_json_4['first_name']
 
 class TestMVPTransformDF:
 
@@ -237,55 +256,4 @@ class TestMVPTransformDF:
 
     def test_transform_sales_order_and_date_case(self, s3_boto, mock_s3_buckets):
         pass     
-
-class TestAppendJSONRaw:
-
-    def test_append_json_raw_except_with_empty_processed_bucket(self, s3_boto, mock_s3_buckets):
-        new_json_key = 'dev/staff'
-        processed_key = 'db_state/staff_all.json'  
-
-        # Assert bucket is empty before test
-        assert s3_boto.list_objects_v2(Bucket='processed-bucket')['KeyCount'] == 0 
-
-        result = append_json_raw_tables(s3_boto, 'ingestion-bucket', new_json_key, 'processed-bucket')
-  
-        processed_obj = s3_boto.get_object(Bucket="processed-bucket", Key=processed_key)
-        processed_json = json.loads(processed_obj["Body"].read().decode("utf-8"))
-        processed_json_0 = processed_json[0]
-
-        # Assert new key has been added to bucket
-        assert s3_boto.list_objects_v2(Bucket='processed-bucket')['KeyCount'] == 1
-        # Assert length of dataframe 
-        assert len(result[1]) == 4
-        # Assert new_df and merged df have the same data
-        assert ((result[1].iloc[0]['first_name'])) == processed_json_0['first_name']
-        assert len(processed_json) == len(result[1]) # 4
-
-
-    def test_append_json_raw_with_existing_data(self, s3_boto,mock_s3_buckets):
-        new_json_key = 'dev/staff'
-        processed_key = 'db_state/staff_all.json'
-        with open("./tests/data/staff_add.json", "r") as jsonfile:
-            body = json.dumps(json.load(jsonfile))
-            s3_boto.put_object(Bucket='ingestion-bucket', Key=new_json_key, Body=body.encode("utf-8"))
-
-        result = append_json_raw_tables(s3_boto, 'ingestion-bucket', new_json_key, 'processed-bucket')
-
-        processed_obj = s3_boto.get_object(Bucket="processed-bucket", Key=processed_key)
-        processed_json = json.loads(processed_obj["Body"].read().decode("utf-8"))
-        processed_json_0 = processed_json[0]
-        processed_json_4 = processed_json[4]
-
-        # Assert that processed is longer than new df
-        assert len(processed_json) > len(result[1]) 
-        # Assert length of processed data has increased        
-        assert len(processed_json) > 4
-        # Assert that first row of new df is same as relative row in processed
-        assert ((result[1].iloc[0]['first_name'])) == processed_json_4['first_name']
-
-        
-
-
-
-     
 
