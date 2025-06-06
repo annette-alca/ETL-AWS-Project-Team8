@@ -101,9 +101,6 @@ def get_data(db, table_name, last_extract=None):
 
 def save_to_s3(extract_client, bucket_name, new_dict_list, table_name, extract_time):
 
-    date, time = extract_time.split('T')
-    key = f"dev/{table_name}/{date}/{table_name}_{time}.json"
-
 
     """
     Utility function, stores a JSON object in an S3 bucket.  Object key is derived from table_name and extract_time arguments
@@ -118,6 +115,9 @@ def save_to_s3(extract_client, bucket_name, new_dict_list, table_name, extract_t
     Returns:
         key (str): S3 Object key derived from table_name and extract_time
     """
+    
+    date, time = extract_time.split('T')
+    key = f"dev/{table_name}/{date}/{table_name}_{time}.json"
 
     if len(new_dict_list)==0:
         return
@@ -126,9 +126,6 @@ def save_to_s3(extract_client, bucket_name, new_dict_list, table_name, extract_t
     return key
 
 def create_conn(extract_client):
-
-    # dotenv.load_dotenv()  # for local implementation
-
     """
     Utility function, creates a database connection based on the environmental variables.
 

@@ -38,6 +38,12 @@ jobs:
             DBNAME: ${{ secrets.DBNAME}}
             HOST: ${{ secrets.HOST}}
             PORT: ${{ secrets.PORT}}
+      - name: Coverage comment
+        uses: py-cov-action/python-coverage-comment-action@v3
+        with:
+          GITHUB_TOKEN: ${{ github.token }}
+          MINIMUM_GREEN: 90
+          MINIMUM_ORANGE: 80
 
         
     
