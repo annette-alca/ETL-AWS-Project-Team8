@@ -33,7 +33,6 @@ def s3_boto(aws_credentials):
     with mock_aws(aws_credentials):
         yield boto3.client('s3')
 
-
 @pytest.fixture(scope='class')
 def mock_s3_buckets(s3_boto):
     """Create ingestion and processed buckets for test functions"""
@@ -47,48 +46,93 @@ def mock_s3_buckets(s3_boto):
     s3_boto.create_bucket(Bucket=bucket_2,
                         CreateBucketConfiguration={"LocationConstraint":"eu-west-2"})
 
+    #INGESTION UPLOADS
+
     with open("./tests/data/staff.json", "r") as jsonfile:
         body = json.dumps(json.load(jsonfile))          
     
         s3_boto.put_object(Bucket=bucket_1, Key=key, Body=body.encode("utf-8"))
         # output = s3_boto.list_objects_v2(Bucket=bucket_1, Prefix=key)
+    
+    with open("./tests/data/department.json", "r") as jsonfile:
+        body = json.dumps(json.load(jsonfile))          
+    
+        s3_boto.put_object(Bucket=bucket_1, Key="dev/department", Body=body.encode("utf-8"))
+
+    with open("./tests/data/address.json", "r") as jsonfile:
+        body = json.dumps(json.load(jsonfile))          
+    
+        s3_boto.put_object(Bucket=bucket_1, Key="dev/address", Body=body.encode("utf-8"))
 
     with open("./tests/data/counterparty.json", "r") as jsonfile:
         body = json.dumps(json.load(jsonfile))          
-        
+    
         s3_boto.put_object(Bucket=bucket_1, Key="dev/counterparty", Body=body.encode("utf-8"))
-        # output = s3_boto.list_objects_v2(Bucket=bucket_1, Prefix=key)
-        
+
+    with open("./tests/data/sales_order.json", "r") as jsonfile:
+        body = json.dumps(json.load(jsonfile))          
+    
+        s3_boto.put_object(Bucket=bucket_1, Key="dev/sales_order", Body=body.encode("utf-8"))
+
+class TestAppendJSONRaw:
+
+    def test_append_json_raw_except_with_empty_processed_bucket(self, s3_boto, mock_s3_buckets):
+        new_json_key = 'dev/staff'
+        processed_key = 'db_state/staff_all.json'  
+
+        # Assert bucket is empty before test
+        assert s3_boto.list_objects_v2(Bucket='processed-bucket')['KeyCount'] == 0 
+
+        result = append_json_raw_tables(s3_boto, 'ingestion-bucket', new_json_key, 'processed-bucket')
+  
+        processed_obj = s3_boto.get_object(Bucket="processed-bucket", Key=processed_key)
+        processed_json = json.loads(processed_obj["Body"].read().decode("utf-8"))
+        processed_json_0 = processed_json[0]
+
+        # Assert new key has been added to bucket
+        assert s3_boto.list_objects_v2(Bucket='processed-bucket')['KeyCount'] == 1
+        # Assert length of dataframe 
+        assert len(result[1]) == 4
+        # Assert new_df and merged df have the same data
+        assert ((result[1].iloc[0]['first_name'])) == processed_json_0['first_name']
+        assert len(processed_json) == len(result[1]) # 4
+
+
+    def test_append_json_raw_with_existing_data(self, s3_boto,mock_s3_buckets):
+        new_json_key = 'dev/staff'
+        processed_key = 'db_state/staff_all.json'
+        with open("./tests/data/staff_add.json", "r") as jsonfile:
+            body = json.dumps(json.load(jsonfile))
+            s3_boto.put_object(Bucket='ingestion-bucket', Key=new_json_key, Body=body.encode("utf-8"))
+
+        result = append_json_raw_tables(s3_boto, 'ingestion-bucket', new_json_key, 'processed-bucket')
+
+        processed_obj = s3_boto.get_object(Bucket="processed-bucket", Key=processed_key)
+        processed_json = json.loads(processed_obj["Body"].read().decode("utf-8"))
+        processed_json_0 = processed_json[0]
+        processed_json_4 = processed_json[4]
+
+        # Assert that processed is longer than new df
+        assert len(processed_json) > len(result[1]) 
+        # Assert length of processed data has increased        
+        assert len(processed_json) > 4
+        # Assert that first row of new df is same as relative row in processed
+        assert ((result[1].iloc[0]['first_name'])) == processed_json_4['first_name']
+
 class TestMVPTransformDF:
 
     def test_transform_staff_case(self, s3_boto, mock_s3_buckets):
         ingestion_bucket = "ingestion-bucket"
         processed_bucket = "processed-bucket"
         staff_key = "dev/staff"
+        department_key = "dev/department"
 
-        ## upload department.json to processed bucket
-
-        with open("./tests/data/department.json", "r") as jsonfile:
-            department_list = json.load(jsonfile)
-
-        department_dict = {}
-        for i in range(len(department_list)):
-            department_dict[str(i)] = department_list[i]
-
-        department_data = json.dumps(department_dict)
-
-        s3_boto.put_object(
-            Bucket=processed_bucket,
-            Key="db_state/department_all.json",
-            Body=department_data.encode("utf-8")
-        )
-
-        ## load staff.json from bucket 
-        response = s3_boto.get_object(Bucket=ingestion_bucket, Key=staff_key)
-        new_df = pd.read_json(StringIO(response["Body"].read().decode("utf-8")))
+        append_json_raw_tables(s3_boto, ingestion_bucket, department_key, processed_bucket)
+        table_name, new_df = append_json_raw_tables(s3_boto, ingestion_bucket,staff_key, processed_bucket)
 
         ## run transformation
-        result = mvp_transform_df(s3_boto, "staff", new_df, processed_bucket)
+        result = mvp_transform_df(s3_boto, table_name , new_df, processed_bucket)
+        
         dim_staff = result["dim_staff"]
 
         ## assert
@@ -107,29 +151,14 @@ class TestMVPTransformDF:
         assert transformed_row_by_staff_id["department_name"] == "Purchasing"
 
     def test_transform_address_case(self, s3_boto, mock_s3_buckets):
+        ingestion_bucket = "ingestion-bucket"
         processed_bucket = "processed-bucket"
-
-        ## upload address.json to processed bucket
-        with open("./tests/data/address.json", "r") as jsonfile:
-            address_list = json.load(jsonfile)
-
-        address_dict = {}
-        for i in range(len(address_list)):
-            address_dict[str(i)] = address_list[i]
-
-        address_data = json.dumps(address_dict)
-
-        s3_boto.put_object(
-            Bucket=processed_bucket,
-            Key="db_state/address_all.json",
-            Body=address_data.encode("utf-8")
-        )
-
-        ## load the address file on the go
-        new_df = pd.DataFrame(address_list)
+        address_key = "dev/address"
+        
+        table_name, new_df = append_json_raw_tables(s3_boto, ingestion_bucket,address_key, processed_bucket)
 
         ## run transformation
-        result = mvp_transform_df(s3_boto, "address", new_df, processed_bucket)
+        result = mvp_transform_df(s3_boto, table_name, new_df, processed_bucket)
         dim_location = result["dim_location"]
 
         ## assert structure
@@ -156,28 +185,8 @@ class TestMVPTransformDF:
         processed_bucket = "processed-bucket"
         counterparty_key = "dev/counterparty"
 
-        ## upload address.json to processed bucket
-        with open("./tests/data/address.json", "r") as jsonfile:
-            address_list = json.load(jsonfile)
-
-        address_dict = {}
-        for i in range(len(address_list)):
-            address_dict[i] = address_list[i]
-
-        address_data = json.dumps(address_dict)
-        
-        s3_boto.put_object(
-            Bucket=processed_bucket,
-            Key="db_state/address_all.json",
-            Body=address_data.encode("utf-8")
-        )
-
-        ## load counterparty.json from bucket 
-        response = s3_boto.get_object(Bucket=ingestion_bucket, Key=counterparty_key)
-        new_df = pd.read_json(StringIO(response["Body"].read().decode("utf-8")))   
-
         ## run transformation
-        result = mvp_transform_df(s3_boto, "counterparty", new_df, processed_bucket)
+        result = mvp_transform_df(s3_boto, table_name, new_df, processed_bucket)
         dim_counterparty = result["dim_counterparty"]
 
         ## assert structure
@@ -248,57 +257,65 @@ class TestMVPTransformDF:
         assert dim_currency.loc[2, "currency_code"] == "EUR"
         assert dim_currency.loc[2, "currency_name"] == "Euro"
 
-    def test_transform_sales_order_and_date_case(self, s3_boto, mock_s3_buckets):
-        pass     
-
-class TestAppendJSONRaw:
-
-    def test_append_json_raw_except_with_empty_processed_bucket(self, s3_boto, mock_s3_buckets):
-        new_json_key = 'dev/staff'
-        processed_key = 'db_state/staff_all.json'  
-
-        # Assert bucket is empty before test
-        assert s3_boto.list_objects_v2(Bucket='processed-bucket')['KeyCount'] == 0 
-
-        result = append_json_raw_tables(s3_boto, 'ingestion-bucket', new_json_key, 'processed-bucket')
-  
-        processed_obj = s3_boto.get_object(Bucket="processed-bucket", Key=processed_key)
-        processed_json = json.loads(processed_obj["Body"].read().decode("utf-8"))
-        processed_json_0 = processed_json['0']
-
-        # Assert new key has been added to bucket
-        assert s3_boto.list_objects_v2(Bucket='processed-bucket')['KeyCount'] == 1
-        # Assert length of dataframe 
-        assert len(result[1]) == 4
-        # Assert new_df and merged df have the same data
-        assert ((result[1].iloc[0]['first_name'])) == processed_json_0['first_name']
-        assert len(processed_json) == len(result[1]) # 4
-
-
-    def test_append_json_raw_with_existing_data(self, s3_boto,mock_s3_buckets):
-        new_json_key = 'dev/staff'
-        processed_key = 'db_state/staff_all.json'
-        with open("./tests/data/staff_add.json", "r") as jsonfile:
-            body = json.dumps(json.load(jsonfile))
-            s3_boto.put_object(Bucket='ingestion-bucket', Key=new_json_key, Body=body.encode("utf-8"))
-
-        result = append_json_raw_tables(s3_boto, 'ingestion-bucket', new_json_key, 'processed-bucket')
-
-        processed_obj = s3_boto.get_object(Bucket="processed-bucket", Key=processed_key)
-        processed_json = json.loads(processed_obj["Body"].read().decode("utf-8"))
-        processed_json_0 = processed_json['0']
-        processed_json_4 = processed_json['4']
-
-        # Assert that processed is longer than new df
-        assert len(processed_json) > len(result[1]) 
-        # Assert length of processed data has increased        
-        assert len(processed_json) > 4
-        # Assert that first row of new df is same as relative row in processed
-        assert ((result[1].iloc[0]['first_name'])) == processed_json_4['first_name']
-
+    def test_transform_sales_order_and_date_case(self, s3_boto, mock_s3_buckets):        
+        ingestion_bucket = "ingestion-bucket"
+        processed_bucket = "processed-bucket"
+        sales_key = "dev/sales_order"
         
+        table_name, new_df = append_json_raw_tables(s3_boto, ingestion_bucket, sales_key, processed_bucket)
+
+        ## run transformation
+        result = mvp_transform_df(s3_boto, table_name, new_df, processed_bucket)
+        
+        assert len(result) == 2
+        fact_result = result['fact_sales_order']
+        dim_date_result = result['dim_date']
+
+        fact_cols_expected = [
+                    "sales_order_id",
+                    "created_date",
+                    "created_time",
+                    "last_updated_date",
+                    "last_updated_time",
+                    "sales_staff_id",
+                    "counterparty_id",
+                    "units_sold",
+                    "unit_price",
+                    "currency_id",
+                    "design_id",
+                    "agreed_payment_date",
+                    "agreed_delivery_date",
+                    "agreed_delivery_location_id",
+                ]
+        
+        assert set(fact_cols_expected).issubset(fact_result.columns)
+
+        assert fact_result.loc[0, 'sales_order_id'] == 14454
+        assert fact_result.loc[0, 'design_id'] == 203
+        assert fact_result.loc[0, 'sales_staff_id'] == 7
+        assert fact_result.loc[0, 'counterparty_id'] == 20
+        assert fact_result.loc[0, 'agreed_delivery_location_id'] == 24
+
+        dim_date_expected = ['date_id',
+                             'year',
+                             'month',
+                             'day',
+                             'day_of_week',
+                             'day_name',
+                             'month_name',
+                             'quarter']
+
+
+        assert set(dim_date_expected).issubset(dim_date_result.columns)
+
+        assert str(dim_date_result.loc[0, 'date_id']) == '2025-06-02 00:00:00'
+        assert dim_date_result.loc[0, 'day_name'] == 'Monday'
+        assert dim_date_result.loc[0, 'month'] == 6
+        assert dim_date_result.loc[0, 'quarter'] == 2
+        assert dim_date_result.loc[0, 'month_name'] == 'June'
 
 
 
-     
+   
+    
 

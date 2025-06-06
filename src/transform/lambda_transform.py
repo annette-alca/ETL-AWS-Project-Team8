@@ -323,22 +323,17 @@ def append_json_raw_tables(s3_client, ingestion_bucket, new_json_key, processed_
     """
 
     table_name = new_json_key.split("/")[1]
-    print("table name before getting ingested file",table_name)
 
     main_json_key_overwritten = f"db_state/{table_name}_all.json"
     new_object = s3_client.get_object(Bucket=ingestion_bucket, Key=new_json_key)
     new_json = json.loads(new_object["Body"].read().decode("utf-8"))
     new_df = pd.DataFrame.from_dict(data=new_json, orient='columns')
-    print ("this is the new df", new_df.head(10))
-    
 
     try:
         main_df = table_name_to_df(s3_client, table_name, processed_bucket)
         merged_df = pd.concat([main_df, new_df], ignore_index=True)
     except s3_client.exceptions.NoSuchKey:
         merged_df = new_df.copy()
-
-    print("this is the merged df", merged_df.head(10))
 
     df_dict = merged_df.T.to_dict()
     df_list = list(df_dict.values())
