@@ -59,7 +59,7 @@ resource "aws_sns_topic" "step_function_alerts" {
   name = "totesys-step-function-alerts"
 }
 
-resource "aws_sns_topic_submscription" "step_function_email_alert" {
+resource "aws_sns_topic_subscription" "step_function_email_alert" {
   topic_arn = aws_sns_topic.step_function_alerts.arn
   protocol = "email"
   endpoint = "sonikajha96@gmail.com"

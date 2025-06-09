@@ -16,12 +16,13 @@ resource "aws_sfn_state_machine" "totes-state-machine" {
     "lambda_transform": {
       "Type": "Task",
       "Resource": "${aws_lambda_function.transform_lambda.arn}",
-      "End": true
-    }
+      "Next":"lambda_load"
+    },
     "lambda_load": {
-      "Type":"Task",
-      "Resource: "${aws_lambda_function.load_lambda.arn}",
-      "End": true}
+    "Type": "Task",
+    "Resource": "${aws_lambda_function.load_lambda.arn}",
+    "End": true
+      }
   }
 }
 EOF
