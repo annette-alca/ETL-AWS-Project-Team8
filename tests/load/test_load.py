@@ -1,10 +1,11 @@
-from src.load.lambda_load import parquet_to_df
+from src.load.lambda_load import parquet_to_df, insert_df_into_warehouse
 import pandas as pd
 from moto import mock_aws
 import pytest
 import boto3
 import os 
 import dotenv
+from pg8000.native import Connection
 
 @pytest.fixture 
 def aws_credentials():
@@ -43,17 +44,45 @@ def test_parquet_to_df(s3_client_bucket_with_parquet_file):
     assert result.loc[0, "design_id"] == 8
     assert result.loc[0, "design_name"] == "Wooden"
 
+# def test_view_location_dim():
+#     expected_df = pd.read_parquet(f"tests/data/dim_location.parquet")
+#     print(expected_df)
+#     print(expected_df[["location_id","city","district"]])
+
 # function to insert df into warehouse using pg8000 
 
 @pytest.fixture
-def db():
+def test_db():
     dotenv.load_dotenv()
     user = os.environ["LOCALUSER"]
     database = os.environ["LOCALDB"]
     password = os.environ["LOCALPASSWORD"]
-    
-    test_db = Connection(database=database, user=user, password=password)
-    test_db.run('DROP TABLE IF EXISTS ')
 
-def test_df_inserted_into_warehouse():
-    pass 
+    test_db = Connection(database=database, user=user, password=password)
+    test_db.run('DROP TABLE IF EXISTS dim_location;')
+    test_db.run("""CREATE TABLE dim_location (
+               location_id int, 
+                address_line_1 varchar,
+                address_line_2 varchar,
+                district varchar,
+                city varchar,
+                postal_code varchar,
+                country varchar,
+                phone varchar);""")
+    return test_db
+
+def test_df_inserted_into_empty_warehouse_table(test_db):
+    df = pd.read_parquet(f"tests/data/dim_location.parquet")
+    insert_df_into_warehouse(test_db, df, "dim_location")
+    result = test_db.run("SELECT * FROM dim_location;")
+    column_names = [column["name"] for column in test_db.columns]
+    assert column_names[0] == "location_id"
+    assert result[0][0] == 1
+    assert column_names[4] == "city"
+    assert result[0][4] == "New Patienceburgh"
+    assert result[1][4] == "Aliso Viejo"
+    assert len(result) == 30
+    # print(result)
+
+
+
