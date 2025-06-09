@@ -6,6 +6,7 @@ import os
 from decimal import Decimal
 # import dotenv # for local implementation
 from pg8000.exceptions import DatabaseError
+# from pprint import pprint
 
 def lambda_extract(events, context):
     """ 
@@ -184,10 +185,15 @@ def serialise_object(obj):
     raise TypeError("Type not serialisable")
 
 
-if __name__ == "__main__":
-   print(lambda_extract(None, None))
-#    time.sleep(15)
+# if __name__ == "__main__":
 #    print(lambda_extract(None, None))
+# #    time.sleep(15)
+# #    print(lambda_extract(None, None))
+#     # s3c = boto3.client('s3')
+#     # db = create_conn(s3c)
+#     # result = get_data(db, "design",None)
+#     # print(dir(db))
+    
 
 
 
