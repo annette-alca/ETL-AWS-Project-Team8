@@ -46,10 +46,38 @@ resource "aws_cloudwatch_metric_alarm" "lambda_transform_error_alarm" {
   period              = 60
   statistic           = "Sum"
   threshold           = 0
-  alarm_description   = "Triggers on any error in extract Lambda"
+  alarm_description   = "Triggers on any error in transform Lambda"
   alarm_actions       = [aws_sns_topic.lambda_transform_alerts.arn]
 
   dimensions = {
     FunctionName = aws_lambda_function.transform_lambda.function_name
+  }
+}
+
+#Step function alarm - 
+resource "aws_sns_topic" "step_function_alerts" {
+  name = "totesys-step-function-alerts"
+}
+
+resource "aws_sns_topic_submscription" "step_function_email_alert" {
+  topic_arn = aws_sns_topic.step_function_alerts.arn
+  protocol = "email"
+  endpoint = "sonikajha96@gmail.com"
+}
+
+resource "aws_cloudwatch_metric_alarm" "step_function_error_alarm" {
+  alarm_name = "totesys-step-function-alarm"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "Errors"
+  namespace           = "AWS/Lambda"
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 0
+  alarm_description   = "Triggers on any error in any of the lambdas in the step function"
+  alarm_actions       = [aws_sns_topic.step_function_alerts.arn]
+
+  dimensions = {
+    FunctionName = aws_sfn_state_machine.totes-state-machine.name
   }
 }
