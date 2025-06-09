@@ -18,6 +18,7 @@ def lambda_load(events, context):
     processed_bucket = os.environ["PROCESSED_S3"]
     s3_client = boto3.client('s3')
     items_inserted_into_db = []
+    db = create_conn(s3_client)
     for file_key in events["new_keys"]:
         df = parquet_to_df(file_key, processed_bucket)
         table_name = file_key.split('/')[1]
