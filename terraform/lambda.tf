@@ -143,6 +143,8 @@ resource "aws_lambda_function" "load_lambda" {
       DBNAME = "postgres"
       HOST = "nc-data-eng-project-dw-prod.chpsczt8h1nu.eu-west-2.rds.amazonaws.com"
       PORT = 5432
+      TESTHOST = "warehouse-test.cnyaqky88fu2.eu-west-2.rds.amazonaws.com"
+      TESTDB = "warehouse-test"
     }
   }
 }
