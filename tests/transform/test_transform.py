@@ -8,18 +8,6 @@ import os
 import json
 from pprint import pprint
 
-@pytest.fixture
-def staff_df():
-    return pd.read_json("tests/data/staff.json").reset_index(drop=True)
-
-@pytest.fixture
-def department_df():
-    return pd.read_json("tests/data/department.json").reset_index()
-
-@pytest.fixture
-def sales_order_df():
-    return pd.read_json("tests/data/sales_order.json").reset_index()
-
 @pytest.fixture(scope='module')
 def aws_credentials():
     os.environ["aws_access_key_id"]="Test"
