@@ -8,18 +8,6 @@ import os
 import json
 from pprint import pprint
 
-@pytest.fixture
-def staff_df():
-    return pd.read_json("tests/data/staff.json").reset_index(drop=True)
-
-@pytest.fixture
-def department_df():
-    return pd.read_json("tests/data/department.json").reset_index()
-
-@pytest.fixture
-def sales_order_df():
-    return pd.read_json("tests/data/sales_order.json").reset_index()
-
 @pytest.fixture(scope='module')
 def aws_credentials():
     os.environ["aws_access_key_id"]="Test"
@@ -316,8 +304,41 @@ class TestMVPTransformDF:
         assert dim_date_result.loc[0, 'quarter'] == 2
         assert dim_date_result.loc[0, 'month_name'] == 'June'
 
+class TestSerialiseObjectFunction:
 
+    def test_serialise_object_returns_isoformat(self):
+        test_datetime = datetime(2025, 6, 6, 9, 22, 10, 153000) 
+        assert isinstance(serialise_object(test_datetime), str)
 
+    def test_serialise_object_returns_float(self):
+        test_decimal = Decimal('339985.77')
+        assert isinstance(serialise_object(test_decimal), float)
+
+    def test_serialise_object_raises_TypeError(self):
+        with pytest.raises(TypeError):
+            serialise_object('test_string')
    
+class TestSaveParquetToS3:
+
+    def test_save_parquet_to_s3(self, s3_boto, mock_s3_buckets):
+        
+        assert s3_boto.list_objects_v2(Bucket='processed-bucket')['KeyCount'] == 0 
+ 
+        ingestion_bucket = "ingestion-bucket"
+        processed_bucket = "processed-bucket"
+        sales_key = "dev/sales_order"
+        
+        table_name, new_df = append_json_raw_tables(s3_boto, ingestion_bucket, sales_key, processed_bucket)
+
+        ## run transformation
+        transformed_dict = mvp_transform_df(s3_boto, table_name, new_df, processed_bucket)
+        saved_parquet = 'dev/fact_sales_order/2022/fact_sales_order_14:20.parquet'
+        save_parquet_to_s3(processed_bucket, transformed_dict,"2022T14:20")
+        assert s3_boto.list_objects_v2(Bucket='processed-bucket')['Contents'][3]['Key'] == saved_parquet
+        
+        
+        
+
+
     
 
