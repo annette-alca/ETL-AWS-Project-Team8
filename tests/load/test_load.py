@@ -29,6 +29,7 @@ def s3_client_bucket_with_parquet_file(s3_client):
         }
     )
     s3_client.upload_file("tests/data/dim_design.parquet", "processed_bucket", "dim_design.parquet")
+    s3_client.upload_file("tests/data/fact_sales_order.parquet", "processed_bucket", "fact_sales_order.parquet")
     return s3_client
 
 
@@ -44,6 +45,13 @@ def test_parquet_to_df(s3_client_bucket_with_parquet_file):
     assert result.loc[0, "design_id"] == 8
     assert result.loc[0, "design_name"] == "Wooden"
 
+    fact_file_key = "fact_sales_order.parquet"
+    expected_fact_df = pd.read_parquet(f"tests/data/{fact_file_key}")
+    fact_result = parquet_to_df(fact_file_key, "processed_bucket")
+    assert type(fact_result) == pd.core.frame.DataFrame 
+    assert all([fact_result.columns[i] == expected_fact_df.columns[i] for i in range(len(fact_result.columns))])
+
+  
 # def test_view_location_dim():
 #     expected_df = pd.read_parquet(f"tests/data/dim_location.parquet")
 #     print(expected_df)
@@ -69,6 +77,23 @@ def test_db():
                 postal_code varchar,
                 country varchar,
                 phone varchar);""")
+    test_db.run('DROP TABLE IF EXISTS fact_sales_order;')
+    test_db.run("""CREATE TABLE fact_sales_order (
+                "sales_record_id" SERIAL primary key,
+                "sales_order_id" int,
+                "created_date" date,
+                "created_time" time,
+                "last_updated_date" date,
+                "last_updated_time" time,
+                "sales_staff_id" int,
+                "counterparty_id" int,
+                "units_sold" int,
+                "unit_price" numeric(10, 2),
+                "currency_id" int,
+                "design_id" int,
+                "agreed_payment_date" date,
+                "agreed_delivery_date" date,
+                "agreed_delivery_location_id" int);""")
     return test_db
 
 def test_df_inserted_into_empty_warehouse_table(test_db):
@@ -82,6 +107,37 @@ def test_df_inserted_into_empty_warehouse_table(test_db):
     assert result[0][4] == "New Patienceburgh"
     assert result[1][4] == "Aliso Viejo"
     assert len(result) == 30
+
+    fact_df = pd.read_parquet(f"tests/data/fact_sales_order.parquet")
+    insert_df_into_warehouse(test_db, fact_df, "fact_sales_order")
+    fact_result = test_db.run("SELECT * FROM fact_sales_order;")
+    fact_column_names = [column["name"] for column in test_db.columns]
+    assert fact_column_names[0] == "sales_record_id"
+    assert fact_result[0][0] == 1
+    assert fact_result[0][1] == 14549
+    assert fact_column_names[11] == "design_id"
+    assert fact_result[0][11] == 322
+    assert len(fact_result) == 1
+
+    # print(fact_column_names)
+    # print(fact_result)
+    # [[1, 
+    # 14549, 
+    #   datetime.date(2025, 6, 6), 
+    #   datetime.time(8, 12, 9, 975000), 
+    #   datetime.date(2025, 6, 6), 
+    #   datetime.time(8, 12, 9, 975000), 
+    # 20, 
+    # 19, 
+    # 40822, 
+    #   Decimal('3.21'), 
+    # 3, 
+    # 322, 
+    #   datetime.date(2025, 6, 7), 
+    #   datetime.date(2025, 6, 7),
+    #  12]]
+    # fact_column_names = [column["name"] for column in test_db.columns]
+
     # print(result)
 
 
