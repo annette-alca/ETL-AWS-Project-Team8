@@ -1,4 +1,4 @@
-from src.load.lambda_load import parquet_to_df, insert_df_into_warehouse
+from src.load.lambda_load import parquet_to_df, insert_df_into_warehouse, lambda_load
 import pandas as pd
 from moto import mock_aws
 import pytest
@@ -6,6 +6,7 @@ import boto3
 import os 
 import dotenv
 from pg8000.native import Connection
+
 
 @pytest.fixture 
 def aws_credentials():
@@ -28,8 +29,8 @@ def s3_client_bucket_with_parquet_file(s3_client):
             'LocationConstraint': 'eu-west-2',
         }
     )
-    s3_client.upload_file("tests/data/dim_design.parquet", "processed_bucket", "dim_design.parquet")
-    s3_client.upload_file("tests/data/fact_sales_order.parquet", "processed_bucket", "fact_sales_order.parquet")
+    s3_client.upload_file("tests/data/dim_design.parquet", "processed_bucket", "dev/dim_design.parquet")
+    s3_client.upload_file("tests/data/fact_sales_order.parquet", "processed_bucket", "dev/fact_sales_order.parquet")
     return s3_client
 
 
@@ -40,7 +41,7 @@ class TestParquetToDFFunction:
         file_key = "dim_design.parquet"
         expected_df = pd.read_parquet(f"tests/data/{file_key}")
 
-        result = parquet_to_df(file_key, "processed_bucket")
+        result = parquet_to_df(f'dev/{file_key}', "processed_bucket")
 
         assert type(result) == pd.core.frame.DataFrame 
         assert all([result.columns[i] == expected_df.columns[i] for i in range(len(result.columns))])
@@ -49,7 +50,7 @@ class TestParquetToDFFunction:
 
         fact_file_key = "fact_sales_order.parquet"
         expected_fact_df = pd.read_parquet(f"tests/data/{fact_file_key}")
-        fact_result = parquet_to_df(fact_file_key, "processed_bucket")
+        fact_result = parquet_to_df(f'dev/{fact_file_key}', "processed_bucket")
         assert type(fact_result) == pd.core.frame.DataFrame 
         assert all([fact_result.columns[i] == expected_fact_df.columns[i] for i in range(len(fact_result.columns))])
 
@@ -140,9 +141,14 @@ class TestDFInsertToWarehouseFunction:
         assert result[0][8] != result[1][8] and result[1][8] == 200
 
 class TestLoadLambdaHandler:
+    def test_lambda_load_integration(self, s3_client, s3_client_bucket_with_parquet_file, test_db, monkeypatch):
+            print(s3_client.list_objects_v2(Bucket='processed_bucket'),'<<<< PRINT S3 ')
+            monkeypatch.setenv("PROCESSED_S3", 'processed_bucket')
+            monkeypatch.setattr("src.load.lambda_load.create_conn", lambda _: test_db)
 
-    def test_load_lambda_handler(self, s3_client_bucket_with_parquet_file, test_db):
-        pass
- 
-
-
+            events = {
+                "total_new_files": 1,
+                "new_keys": ["dev/fact_sales_order"]
+            }
+            result = lambda_load(events, context=None)
+            print (result)
