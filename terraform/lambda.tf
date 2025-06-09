@@ -95,7 +95,6 @@ resource "aws_lambda_function" "transform_lambda" {
   }
 }
 
-
 # ----------------
 # Load Lambda  
 # ----------------
