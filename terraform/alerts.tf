@@ -54,18 +54,18 @@ resource "aws_cloudwatch_metric_alarm" "lambda_transform_error_alarm" {
   }
 }
 
-#Step function alarm - 
-resource "aws_sns_topic" "step_function_alerts" {
-  name = "totesys-step-function-alerts"
+#Load alarm - 
+resource "aws_sns_topic" "lambda_load_alerts" {
+  name = "lambda_load_alerts"
 }
 
 resource "aws_sns_topic_subscription" "lambda_load_error_alarm" {
-  topic_arn = aws_sns_topic.step_function_alerts.arn
+  topic_arn = aws_sns_topic.lambda_load_alerts.arn
   protocol = "email"
   endpoint = "sonikajha96@gmail.com"
 }
 
-resource "aws_cloudwatch_metric_alarm" "step_function_error_alarm" {
+resource "aws_cloudwatch_metric_alarm" "lambda_load_error_alarm" {
   alarm_name = "totesys-step-function-alarm"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
@@ -74,10 +74,10 @@ resource "aws_cloudwatch_metric_alarm" "step_function_error_alarm" {
   period              = 60
   statistic           = "Sum"
   threshold           = 0
-  alarm_description   = "Triggers on any error in any of the lambdas in the step function"
-  alarm_actions       = [aws_sns_topic.step_function_alerts.arn]
+  alarm_description   = "Triggers on any error in the load Lambda"
+  alarm_actions       = [aws_sns_topic.lambda_load_alerts.arn]
 
   dimensions = {
-    FunctionName = aws_sfn_state_machine.totes-state-machine.name
+    FunctionName = aws_lambda_function.load_lambda.function_name
   }
 }
