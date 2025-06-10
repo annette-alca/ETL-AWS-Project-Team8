@@ -4,10 +4,7 @@ from datetime import datetime, UTC
 from pg8000.native import Connection
 import os
 from decimal import Decimal
-
 import dotenv # for local implementation
-
-
 
 from pg8000.exceptions import DatabaseError
 # from pprint import pprint
@@ -141,10 +138,7 @@ def create_conn(extract_client):
         Connection (Object): pg8000.native object with environment credentials
     """
 
-
     dotenv.load_dotenv()
-
-
     user = os.environ["DBUSER"]
     database = os.environ["DBNAME"]
     dbhost = os.environ["HOST"]
@@ -166,7 +160,7 @@ def get_db_password(extract_client):
     """
 
     key = 'secrets/secrets.json'
-    bucket = os.environ['BACKEND_S3'] # 'bucket-to-hold-tf-state-for-terraform'
+    bucket = os.environ["BACKEND_S3"] # 'bucket-to-hold-tf-state-for-terraform'
     pw_file = extract_client.get_object(Bucket=bucket, Key=key)
     pw_dict = json.loads(pw_file["Body"].read().decode("utf-8"))
     return pw_dict['totesys']
@@ -200,5 +194,3 @@ def serialise_object(obj):
 #     # db = create_conn(s3c)
 #     # result = get_data(db, "design",None)
 #     # print(dir(db))
-
-lambda_extract(None, None)
