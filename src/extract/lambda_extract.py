@@ -4,7 +4,7 @@ from datetime import datetime, UTC
 from pg8000.native import Connection
 import os
 from decimal import Decimal
-# import dotenv # for local implementation
+import dotenv # for local implementation
 from pg8000.exceptions import DatabaseError
 # from pprint import pprint
 
@@ -137,7 +137,7 @@ def create_conn(extract_client):
         Connection (Object): pg8000.native object with environment credentials
     """
 
-    # dotenv.load_dotenv()
+    dotenv.load_dotenv()
     user = os.environ["DBUSER"]
     database = os.environ["DBNAME"]
     dbhost = os.environ["HOST"]
@@ -193,5 +193,3 @@ def serialise_object(obj):
 #     # db = create_conn(s3c)
 #     # result = get_data(db, "design",None)
 #     # print(dir(db))
-
-lambda_extract(None, None)
