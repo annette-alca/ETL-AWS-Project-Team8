@@ -303,7 +303,7 @@ def mvp_transform_df(s3_client, table_name, new_df, processed_bucket):
             dim_date["month_name"] = [d.month_name() for d in dim_date["date_id"]]
             dim_date["quarter"] = [d.quarter for d in dim_date["date_id"]]
             
-            return {"fact_sales_order": fact_sales_order, "dim_date": dim_date}
+            return {"dim_date": dim_date, "fact_sales_order": fact_sales_order}
 
 
 def append_json_raw_tables(s3_client, ingestion_bucket, new_json_key, processed_bucket):

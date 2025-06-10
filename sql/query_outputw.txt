@@ -14,13 +14,13 @@
  project_team_08 | fact_sales_order    | table | postgres
 (11 rows)
 
-DELETE 957
 DELETE 0
-DELETE 605
-DELETE 0
-DELETE 0
+DELETE 958
+DELETE 30
+DELETE 606
 DELETE 20
-DELETE 0
+DELETE 3
+DELETE 20
  purchase_record_id | purchase_order_id | created_date | created_time | last_updated_date | last_updated_time | staff_id | counterparty_id | item_code | item_quantity | item_unit_price | currency_id | agreed_delivery_date | agreed_payment_date | agreed_delivery_location_id 
 --------------------+-------------------+--------------+--------------+-------------------+-------------------+----------+-----------------+-----------+---------------+-----------------+-------------+----------------------+---------------------+-----------------------------
 (0 rows)

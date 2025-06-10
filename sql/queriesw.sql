@@ -1,6 +1,7 @@
 \dt
-DELETE FROM dim_date;DELETE FROM dim_location;DELETE FROM dim_design;DELETE FROM dim_staff;DELETE FROM dim_currency;DELETE FROM dim_counterparty;DELETE FROM fact_sales_order;
+DELETE FROM fact_sales_order;
 
+DELETE FROM dim_date;DELETE FROM dim_location;DELETE FROM dim_design;DELETE FROM dim_staff;DELETE FROM dim_currency;DELETE FROM dim_counterparty;
 select * from fact_purchase_order
 limit 10;
 
