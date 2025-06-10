@@ -139,11 +139,9 @@ resource "aws_lambda_function" "load_lambda" {
       BACKEND_S3 = "bucket-to-hold-tf-state-for-terraform"
       PROCESSED_S3 = aws_s3_bucket.processed_s3.bucket
       DBUSER = "project_team_08"
-      DBNAME = "postgres"
-      HOST = "nc-data-eng-project-dw-prod.chpsczt8h1nu.eu-west-2.rds.amazonaws.com"
+      DBNAME_WH = "postgres"
+      HOST_WH = "nc-data-eng-project-dw-prod.chpsczt8h1nu.eu-west-2.rds.amazonaws.com"
       PORT = 5432
-      TESTHOST = "warehouse-test.cnyaqky88fu2.eu-west-2.rds.amazonaws.com"
-      TESTDB = "warehouse-test"
     }
   }
 }
