@@ -56,17 +56,17 @@ resource "aws_cloudwatch_metric_alarm" "lambda_transform_error_alarm" {
 
 #Load alarm - 
 resource "aws_sns_topic" "lambda_load_alerts" {
-  name = "lambda_load_alerts"
+  name = "lambda-load-alerts"
 }
 
-resource "aws_sns_topic_subscription" "lambda_load_error_alarm" {
+resource "aws_sns_topic_subscription" "load_email_alert" {
   topic_arn = aws_sns_topic.lambda_load_alerts.arn
   protocol = "email"
   endpoint = "sonikajha96@gmail.com"
 }
 
 resource "aws_cloudwatch_metric_alarm" "lambda_load_error_alarm" {
-  alarm_name = "totesys-step-function-alarm"
+  alarm_name          = "lambda-load-alarm"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "Errors"
@@ -74,7 +74,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_load_error_alarm" {
   period              = 60
   statistic           = "Sum"
   threshold           = 0
-  alarm_description   = "Triggers on any error in the load Lambda"
+  alarm_description   = "Triggers on any error in load Lambda"
   alarm_actions       = [aws_sns_topic.lambda_load_alerts.arn]
 
   dimensions = {
