@@ -3,29 +3,7 @@ on:
   pull_request:
     branches:
       - main
-jobs:
-  container-job:
-  # Containers must run in Linux based operating systems
-    runs-on: ubuntu-latest
-    # Docker Hub image that `container-job` executes in
-    container: node:20-bookworm-slim
-
-    # Service containers to run with `container-job`
-    services:
-      # Label used to access the service container
-      postgres:
-        # Docker Hub image
-        image: postgres
-        # Provide the password for postgres
-        env:
-          LOCALPASSWORD: ${{ secrets.LOCALPASSWORD}}
-        # Set health checks to wait until postgres has started
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-  
+jobs:  
   setup-aws-credentials:
     name: setup-aws-credentials
     runs-on: ubuntu-latest
@@ -53,18 +31,18 @@ jobs:
       - name: requirements
         run: make requirements
 
-      - name: Connect to PostgreSQL
-        # Runs a script that creates a PostgreSQL table, populates
-        # the table with data, and then retrieves the data.
-        run: github_db.sql
-        # Environment variables used by the `client.js` script to create a new PostgreSQL table.
-        env:
-          # The hostname used to communicate with the PostgreSQL service container
-          POSTGRES_HOST: postgres
-          # The default PostgreSQL port
-          POSTGRES_PORT: 5432
-          LOCALUSER: ${{ secrets.LOCALUSER}}
-          LOCALDB: ${{ secrets.LOCALDB}}
+  postgres_setup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Start PostgreSQL
+        run: |
+          sudo systemctl start postgresql.service
+          pg_isready
+          sudo -u postgres createuser -s -d -r -w runner
+
+          psql -f github_db.sql
+
 
       - name: Run checks
         run: make run-checks

@@ -10,3 +10,4 @@ query_helper*
 .coverage
 tempdata
 *.DS_Store
+scratch.txt
