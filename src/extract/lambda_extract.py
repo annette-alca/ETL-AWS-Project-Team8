@@ -159,7 +159,7 @@ def get_db_password(extract_client):
     """
 
     key = 'secrets/secrets.json'
-    bucket = os.environ['BACKEND_S3'] # 'bucket-to-hold-tf-state-for-terraform'
+    bucket = os.environ["BACKEND_S3"] # 'bucket-to-hold-tf-state-for-terraform'
     pw_file = extract_client.get_object(Bucket=bucket, Key=key)
     pw_dict = json.loads(pw_file["Body"].read().decode("utf-8"))
     return pw_dict['totesys']
