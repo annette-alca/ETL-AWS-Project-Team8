@@ -6,7 +6,7 @@ import boto3
 import os
 import json
 from pprint import pprint # for local viewing
-import dotenv #local implementation
+# import dotenv #local implementation
 
 def lambda_load(events, context):
     if events["total_new_files"]==0:
@@ -40,12 +40,12 @@ def create_conn(extract_client):
         Connection (Object): pg8000.native object with environment credentials
     """
 
-    dotenv.load_dotenv()
+    # dotenv.load_dotenv()
     user = os.environ["DBUSER"]
-    database = os.environ["DBNAME_WH"]
-    dbhost = os.environ["HOST_WH"]
+    database = os.environ["TESTDB"] #test values
+    dbhost = os.environ["TESTHOST"] #test values
     dbport = os.environ["PORT"]
-    password = get_db_password(extract_client)
+    password = os.environ["DBUSER"] #get_db_password(extract_client)
     return Connection(
         database=database, user=user, password=password, host=dbhost, port=dbport
     )
