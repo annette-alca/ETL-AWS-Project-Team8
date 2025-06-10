@@ -6,7 +6,7 @@ import boto3
 import os
 import json
 from pprint import pprint # for local viewing
-import dotenv #local implementation
+# import dotenv #local implementation
 
 def lambda_load(events, context):
     if events["total_new_files"]==0:
@@ -18,6 +18,7 @@ def lambda_load(events, context):
     processed_bucket = os.environ["PROCESSED_S3"]
     s3_client = boto3.client('s3')
     items_inserted_into_db = []
+    db = create_conn(s3_client)
     for file_key in events["new_keys"]:
         df = parquet_to_df(file_key, processed_bucket)
         table_name = file_key.split('/')[1]
@@ -39,12 +40,12 @@ def create_conn(extract_client):
         Connection (Object): pg8000.native object with environment credentials
     """
 
-    dotenv.load_dotenv()
+    # dotenv.load_dotenv()
     user = os.environ["DBUSER"]
-    database = os.environ["DBNAME_WH"]
-    dbhost = os.environ["HOST_WH"]
+    database = os.environ["TESTDB"] #test values
+    dbhost = os.environ["TESTHOST"] #test values
     dbport = os.environ["PORT"]
-    password = get_db_password(extract_client)
+    password = os.environ["DBUSER"] #get_db_password(extract_client)
     return Connection(
         database=database, user=user, password=password, host=dbhost, port=dbport
     )
