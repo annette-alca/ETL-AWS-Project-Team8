@@ -45,15 +45,19 @@ def db(s3_client):
 @patch("src.extract.lambda_extract.get_data")
 @patch("src.extract.lambda_extract.save_to_s3")
 @patch("src.extract.lambda_extract.create_conn")
+@patch("src.extract.lambda_extract.boto3.client")
 class TestLambdaExtract:
-    def test_lambda_extract_returns_a_dict(self, mock_create_conn, mock_save_to_s3,
+    def test_lambda_extract_returns_a_dict(self, mock_boto3_client, mock_create_conn, mock_save_to_s3,
                                 mock_get_data, mock_get_last_timestamps, 
                                 s3_client):
         
-        # mocking/patching 
-        mock_create_conn.return_value = s3_client
+        # mocking boto3 client 
+        mock_boto3_client.return_value = s3_client
+        
+        bucket_name = "team-08-ingestion-20250528081548341900000001"
+        os.environ["INGESTION_S3"] = bucket_name
         s3_client.create_bucket(
-            Bucket="team-08-ingestion-20250528081548341900000001", 
+            Bucket = bucket_name, 
             CreateBucketConfiguration={'LocationConstraint': 'eu-west-2'}
             ) 
 
@@ -79,14 +83,17 @@ class TestLambdaExtract:
         assert type(result) == dict
         assert len(result) == 4
 
-    def test_lambda_extract_returns_a_dict_with_correct_keys(self, mock_create_conn, mock_save_to_s3,
+    def test_lambda_extract_returns_a_dict_with_correct_keys(self, mock_boto3_client, mock_create_conn, mock_save_to_s3,
                                 mock_get_data, mock_get_last_timestamps, 
                                 s3_client):
         
-        # mocking/patching 
-        mock_create_conn.return_value = s3_client
+        # mocking boto3 client 
+        mock_boto3_client.return_value = s3_client
+        
+        bucket_name = "team-08-ingestion-20250528081548341900000001"
+        os.environ["INGESTION_S3"] = bucket_name
         s3_client.create_bucket(
-            Bucket="team-08-ingestion-20250528081548341900000001", 
+            Bucket = bucket_name, 
             CreateBucketConfiguration={'LocationConstraint': 'eu-west-2'}
             ) 
         
@@ -112,17 +119,19 @@ class TestLambdaExtract:
         for key in result:
             assert key in expected_keys
     
-    def test_lambda_extract_dict_has_correct_data_types(self, mock_create_conn, mock_save_to_s3,
+    def test_lambda_extract_dict_has_correct_data_types(self, mock_boto3_client, mock_create_conn, mock_save_to_s3,
                                 mock_get_data, mock_get_last_timestamps, 
                                 s3_client):
         
-        # mocking/patching 
-        mock_create_conn.return_value = s3_client
+        # mocking boto3 client 
+        mock_boto3_client.return_value = s3_client
+        
+        bucket_name = "team-08-ingestion-20250528081548341900000001"
+        os.environ["INGESTION_S3"] = bucket_name
         s3_client.create_bucket(
-            Bucket="team-08-ingestion-20250528081548341900000001", 
+            Bucket = bucket_name, 
             CreateBucketConfiguration={'LocationConstraint': 'eu-west-2'}
             ) 
-
         mock_get_last_timestamps.return_value = ({'address': '2025-06-09T14:09:23.675428', 'counterparty': '2025-06-09T14:09:23.680175', 'currency': '2025-06-09T14:09:23.685458', 'department': '2025-06-09T14:09:23.690808', 'design': '2025-06-09T14:09:23.696537', 'payment': '2025-06-09T14:09:23.703961', 'payment_type': '2025-06-09T14:09:23.708820', 'purchase_order': '2025-06-09T14:09:23.716083', 'sales_order': '2025-06-09T14:09:23.723256', 'staff': '2025-06-09T14:09:23.728582', 'transaction': '2025-06-09T14:09:23.736180'}, 'db_state/extraction_timestamps.json')
        
         mock_get_data.side_effect = [
@@ -148,13 +157,16 @@ class TestLambdaExtract:
         assert type(result["new_keys"]) == list
         assert len(result["new_keys"]) == result["total_new_files"]
     
-    def test_lambda_extract_returns_correct_values(self, mock_create_conn, mock_save_to_s3,
+    def test_lambda_extract_returns_correct_values(self, mock_boto3_client, mock_create_conn, mock_save_to_s3,
                                 mock_get_data, mock_get_last_timestamps, 
                                 s3_client):
-        # mocking/patching 
-        mock_create_conn.return_value = s3_client
+        # mocking boto3 client 
+        mock_boto3_client.return_value = s3_client
+        
+        bucket_name = "team-08-ingestion-20250528081548341900000001"
+        os.environ["INGESTION_S3"] = bucket_name
         s3_client.create_bucket(
-            Bucket="team-08-ingestion-20250528081548341900000001", 
+            Bucket = bucket_name, 
             CreateBucketConfiguration={'LocationConstraint': 'eu-west-2'}
             ) 
 
