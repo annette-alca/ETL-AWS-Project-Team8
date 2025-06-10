@@ -62,6 +62,8 @@ def mock_s3_buckets(s3_boto):
     
         s3_boto.put_object(Bucket=bucket_1, Key="dev/sales_order", Body=body.encode("utf-8"))
 
+
+
 class TestAppendJSONRaw:
 
     def test_append_json_raw_except_with_empty_processed_bucket(self, s3_boto, mock_s3_buckets):
@@ -336,9 +338,50 @@ class TestSaveParquetToS3:
         save_parquet_to_s3(processed_bucket, transformed_dict,"2022T14:20")
         assert s3_boto.list_objects_v2(Bucket='processed-bucket')['Contents'][3]['Key'] == saved_parquet
         
+
+class TestTransformLambdaHandler:
+
+    def test_lambda_transform_with_no_event(self, s3_boto, mock_s3_buckets, monkeypatch):
+        test_events = {
+                "message": "completed ingestion",
+                "timestamp": "2025-06-10T10:04:36.847261",
+                "total_new_files": 0,
+                "new_keys": []
+                }
+        
+        monkeypatch.setenv("INGESTION_S3", 'ingestion-bucket')
+        monkeypatch.setenv("PROCESSED_S3", 'processed-bucket')
+        result = lambda_transform(test_events, None)
+        assert len(result) == 4
+        assert result.keys() == {'message', 'timestamp', 'total_new_files', 'new_keys'}
+       
+
+    def test_lambda_transform_with_1_event_and_no_data(self, s3_boto, mock_s3_buckets, monkeypatch):
+        test_events = {
+                "message": "completed ingestion",
+                "timestamp": "2025-06-10T10:04:36.847261",
+                "total_new_files": 1,
+                "new_keys": ['dev/sales_order']
+                }
+        
+        monkeypatch.setenv("INGESTION_S3", 'ingestion-bucket')
+        monkeypatch.setenv("PROCESSED_S3", 'processed-bucket')
+
+        print(s3_boto)
+        monkeypatch.setattr("boto3.client", lambda _: s3_boto)
+
+        result = lambda_transform(test_events, None)
+        
+
+        assert len(result) == 4
+        assert result.keys() == {'message', 'timestamp', 'total_new_files', 'new_keys'}
+        assert result['total_new_files'] == 2
+       
+        
         
         
 
+        
 
     
 
