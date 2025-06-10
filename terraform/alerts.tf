@@ -66,7 +66,7 @@ resource "aws_sns_topic_subscription" "lambda_load_error_alarm" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "lambda_load_error_alarm" {
-  alarm_name = "totesys-step-function-alarm"
+  alarm_name = "lambda-load-alarm"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "Errors"

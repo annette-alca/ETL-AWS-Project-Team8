@@ -194,4 +194,3 @@ def serialise_object(obj):
 #     # result = get_data(db, "design",None)
 #     # print(dir(db))
 
-lambda_extract(None, None)

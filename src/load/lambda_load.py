@@ -102,7 +102,7 @@ def insert_df_into_warehouse(db, df, table_name):
         print(e)
         print("problem in",table_name)
         print(query[:300])
-        pass
+        return {table_name:e}
 
     return {table_name:len(df)}
     
