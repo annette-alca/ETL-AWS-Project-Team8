@@ -38,7 +38,12 @@ jobs:
             DBNAME: ${{ secrets.DBNAME}}
             HOST: ${{ secrets.HOST}}
             PORT: ${{ secrets.PORT}}
-      
+            BACKEND_S3: ${{ secrets.BACKEND_S3}}
+            INGESTION_S3: ${{ secrets.INGESTION_S3}}
+            PROCESSED_S3: ${{ secrets.PROCESSED_S3}}
+            HOST_WH: ${{ secrets.HOST_WH}}
+            DBNAME_WH: ${{ secrets.DBNAME_WH}}
+            
         
     
      
