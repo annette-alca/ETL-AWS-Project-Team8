@@ -289,3 +289,5 @@ class TestSerialiseObjectFunction:
     def test_serialise_object_raises_TypeError(self):
         with pytest.raises(TypeError):
             serialise_object('test_string')
+
+#change 
