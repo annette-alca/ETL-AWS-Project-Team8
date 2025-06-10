@@ -53,6 +53,10 @@ class TestLambdaExtract:
         
         # mocking boto3 client 
         mock_boto3_client.return_value = s3_client
+
+        # mock db 
+        mock_db = Mock()
+        mock_create_conn.return_value = mock_db
         
         bucket_name = "team-08-ingestion-20250528081548341900000001"
         os.environ["INGESTION_S3"] = bucket_name
@@ -90,6 +94,10 @@ class TestLambdaExtract:
         # mocking boto3 client 
         mock_boto3_client.return_value = s3_client
         
+        # mock db 
+        mock_db = Mock()
+        mock_create_conn.return_value = mock_db
+
         bucket_name = "team-08-ingestion-20250528081548341900000001"
         os.environ["INGESTION_S3"] = bucket_name
         s3_client.create_bucket(
@@ -126,6 +134,10 @@ class TestLambdaExtract:
         # mocking boto3 client 
         mock_boto3_client.return_value = s3_client
         
+        # mock db 
+        mock_db = Mock()
+        mock_create_conn.return_value = mock_db
+
         bucket_name = "team-08-ingestion-20250528081548341900000001"
         os.environ["INGESTION_S3"] = bucket_name
         s3_client.create_bucket(
@@ -162,6 +174,10 @@ class TestLambdaExtract:
                                 s3_client):
         # mocking boto3 client 
         mock_boto3_client.return_value = s3_client
+        
+        # mock db 
+        mock_db = Mock()
+        mock_create_conn.return_value = mock_db
         
         bucket_name = "team-08-ingestion-20250528081548341900000001"
         os.environ["INGESTION_S3"] = bucket_name
