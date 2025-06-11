@@ -35,16 +35,6 @@ jobs:
           --health-interval 10s
           --health-timeout 10s
           --health-retries 5         
-    steps:      
-      - name: Client
-        run:
-          sudo apt-get update && sudo apt-get install -y postgresql-client
-      - name: Create DB
-        run: 
-
-          psql -h postgres -d ${{ secrets.LOCALDB}} -U ${{ secrets.LOCALUSER }}  -c "DROP DATABASE IF EXISTS warehouse; CREATE DATABASE warehouse;"
-        env:
-          POSTGRES_PASSWORD: ${{ secrets.LOCALPASSWORD}}
 
     
   run-tests:
