@@ -43,7 +43,7 @@ jobs:
       - name: Install Postgresql Client
         run:
           apt-get-update
-          ape-get-install --yes postgresql-client
+          apt-get-install --yes postgresql-client
       
       - name: Create DB
         run: 
