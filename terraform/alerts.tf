@@ -66,7 +66,11 @@ resource "aws_sns_topic_subscription" "load_email_alert" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "lambda_load_error_alarm" {
+<<<<<<< HEAD
+  alarm_name = "lambda-load-alarm"
+=======
   alarm_name          = "lambda-load-alarm"
+>>>>>>> main
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "Errors"

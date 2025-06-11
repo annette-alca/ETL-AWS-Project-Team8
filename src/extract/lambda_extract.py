@@ -30,8 +30,8 @@ def lambda_extract(events, context):
     db = create_conn(extract_client)
     bucket_name = os.environ['INGESTION_S3']
     table_names = ["address", "counterparty", "currency", "department", 
-                   "design", "payment", "payment_type", "purchase_order", "sales_order",
-                   "staff", "transaction"]
+                   "design", "payment", "payment_type", "purchase_order",
+                   "staff", "transaction", "sales_order"]
     last_timestamp_dict, timestamp_key = get_last_timestamps(extract_client, bucket_name)
     new_timestamp_dict = {}
     new_keys = []
@@ -194,3 +194,7 @@ def serialise_object(obj):
 #     # db = create_conn(s3c)
 #     # result = get_data(db, "design",None)
 #     # print(dir(db))
+<<<<<<< HEAD
+
+=======
+>>>>>>> main
