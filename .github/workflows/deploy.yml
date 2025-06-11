@@ -19,9 +19,7 @@ jobs:
 
   postgres-job:
     runs-on: ubuntu-latest
-    
-    container: node:latest
-      
+    container: node:latest     
     services:
       postgres:
         image: postgres:14.7
@@ -29,30 +27,25 @@ jobs:
           POSTGRES_USER: ${{ secrets.LOCALUSER}}
           POSTGRESS_DB: ${{ secrets.LOCALDB}}
           POSTGRES_PASSWORD: ${{ secrets.LOCALPASSWORD}}
-          
+          POSTGRES_PORT: ${{ secrets.PORT}}          
         ports:
-          - 5432:5432
-          
-        options:
+          - 5432:5432          
+        options: >-
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 10s
-          --health-retries 5     
-    
-    steps:
-      - name: Install Postgresql Client
-        run:
-          apt-get-update
-          apt-get-install --yes postgresql-client
-      
+          --health-retries 5         
+    steps:      
       - name: Create DB
         run: 
-          psql -h postgres -d postgres_db -U ${{ secrets.LOCALUSER }}  -c "DROP DATABASE IF EXISTS warehouse; CREATE DATABASE warehouse;"
+          psql -h postgres -d ${{ secrets.LOCALDB}} -U ${{ secrets.LOCALUSER }}  -c "DROP DATABASE IF EXISTS warehouse; CREATE DATABASE warehouse;"
+        env:
+          POSTGRES_PASSWORD: ${{ secrets.LOCALPASSWORD}}
 
     
   run-tests:
     name: run-tests
-    needs: [setup-aws-credentials]
+    needs: [setup-aws-credentials, postgres-job]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
