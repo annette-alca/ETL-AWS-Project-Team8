@@ -7,9 +7,29 @@ import boto3
 import os
 import json
 from pprint import pprint # for local viewing
-# import dotenv #local implementation
+import dotenv #local implementation
 
 def lambda_load(events, context):
+    """
+    AWS Lambda entry point for uploading stored parquet files to Data Warehouse
+
+    Args:
+        events (dict): 
+            - 'message': Status message
+            - 'timestamp': Completion time
+            - 'total_new_files': Number of transformed files
+            - 'new_keys': List of new Parquet file keys
+
+        context (None): AWS Lambda context Object
+
+    Returns:
+        dict: 
+            - 'message': Status message
+            - 'timestamp': Completion time 
+            - 'total_tables_updated': Number of updated tables
+             - 'items_inserted_into_db': dict of tables(keys) and count of rows updated (value)
+    """
+
     if events["total_new_files"]==0:
         return {"message": "completed loading",
                 "timestamp": events["timestamp"],
@@ -41,7 +61,7 @@ def create_conn(s3_client):
         Connection (Object): pg8000.native object with environment credentials
     """
 
-    # dotenv.load_dotenv()
+    dotenv.load_dotenv()
     user = os.environ["DBUSER"]
     database = os.environ["DBNAME_WH"] 
     dbhost = os.environ["HOST_WH"] 
@@ -69,12 +89,37 @@ def get_db_password(s3_client):
     return pw_dict['warehouse']
 
 def parquet_to_df(file_key, processed_bucket):
+    """
+    Utility function that converts a parquet file stored in an S3 bucket
+    to a Dataframe
+
+    Args:
+        file_key (str): Name of the file to load
+        processed_bucket (str): S3 bucket name
+
+    Returns:
+        DataFrame Object: Pandas DataFrame object containing converted data
+    """
     df = wr.s3.read_parquet(path=f's3://{processed_bucket}/{file_key}')
     # print(df.head(10))
     return df
 
 def insert_df_into_warehouse(db, df, table_name):
+<<<<<<< HEAD
     # print(df.head(10))
+=======
+    """
+    Utility function to insert DataFrame rows into a relational database
+
+    Args:
+        db (pg8000 Object): pg8000.Native.Connection object
+        df (DataFrame Object): Pandas DataFrame object containing data to be inserted
+        table_name (str): DB table name to be queried
+
+    Returns:
+        _type_: _description_
+    """
+>>>>>>> main
     query = f"INSERT INTO {table_name}"
     column_string = ', '.join(df.columns)
     query += f"({column_string}) VALUES"

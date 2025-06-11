@@ -6,7 +6,7 @@ from decimal import Decimal
 import awswrangler as wr
 import json
 
-# import dotenv  # for local runs
+import dotenv  # for local runs
 
 def lambda_transform(events, context):
     """
@@ -34,7 +34,7 @@ def lambda_transform(events, context):
             "new_keys": [],
         }
 
-    # dotenv.load_dotenv()  ## for local implementation
+    dotenv.load_dotenv()  ## for local implementation
     s3_client = boto3.client("s3")
     ingestion_bucket = os.environ["INGESTION_S3"]
     processed_bucket = os.environ["PROCESSED_S3"]
@@ -322,6 +322,7 @@ def append_json_raw_tables(s3_client, ingestion_bucket, new_json_key, processed_
             - new_df (pandas.DataFrame): DataFrame created from the new JSON file
     """
 
+    print(f'json_s3: {s3_client}')
     table_name = new_json_key.split("/")[1]
 
     main_json_key_overwritten = f"db_state/{table_name}_all.json"
@@ -342,16 +343,6 @@ def append_json_raw_tables(s3_client, ingestion_bucket, new_json_key, processed_
             Key=main_json_key_overwritten)
   
     return (table_name, new_df)
-
-
-def backlog_transform_to_parquet():
-    # docstring may need to add later if required
-    additional_tables = {
-        "payment": ["fact_sales_order", "dim_date"],
-        "payment_type": ["dim_date"],
-        "purchase_order": ["fact_sales_order", "dim_date"],
-        "transaction": ["fact_sales_order", "dim_date"],
-    }
 
 
 def serialise_object(obj):

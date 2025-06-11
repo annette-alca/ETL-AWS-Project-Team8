@@ -1,4 +1,4 @@
-from src.load.lambda_load import parquet_to_df, insert_df_into_warehouse, lambda_load
+from src.load.lambda_load import *
 import pandas as pd
 from moto import mock_aws
 import pytest
@@ -140,15 +140,68 @@ class TestDFInsertToWarehouseFunction:
         assert result[0][1] == result[1][1]
         assert result[0][8] != result[1][8] and result[1][8] == 200
 
+class TestGetDbPassword:
+    def test_get_db_password_returns_str(self, s3_client):
+        extract_client = s3_client
+        extract_client.create_bucket(
+            Bucket="bucket-to-hold-tf-state-for-terraform", 
+            CreateBucketConfiguration={'LocationConstraint': 'eu-west-2'}
+            )
+        extract_client.upload_file("tests/data/secrets.json", "bucket-to-hold-tf-state-for-terraform", 'secrets/secrets.json')
+        result = get_db_password(extract_client)
+        assert type(result) == str
+        assert result == "password" 
+
 class TestLoadLambdaHandler:
-    def test_lambda_load_integration(self, s3_client, s3_client_bucket_with_parquet_file, test_db, monkeypatch):
-            print(s3_client.list_objects_v2(Bucket='processed_bucket'),'<<<< PRINT S3 ')
+
+    def test_lambda_load_integration_with_no_event(self, s3_client, s3_client_bucket_with_parquet_file, test_db, monkeypatch):
+        monkeypatch.setenv("PROCESSED_S3", 'processed_bucket')
+        monkeypatch.setattr("src.load.lambda_load.create_conn", lambda _: test_db)
+
+        events = {
+            "message": "completed transformation",
+            "timestamp": '2025-06-10T09:05:38.560879',
+            "total_new_files": 0,
+            "new_keys": []
+        }
+        result = lambda_load(events, context=None)
+        assert len(result) == 4
+        assert result.keys() == {'message', 'timestamp', 'total_tables_updated', 'items_inserted_into_db'}
+
+
+    def test_lambda_load_integration_with_an_event(self, s3_client, s3_client_bucket_with_parquet_file, test_db, monkeypatch):
             monkeypatch.setenv("PROCESSED_S3", 'processed_bucket')
             monkeypatch.setattr("src.load.lambda_load.create_conn", lambda _: test_db)
 
             events = {
+                "message": "completed transformation",
+                "timestamp": '2025-06-10T09:05:38.560879',
                 "total_new_files": 1,
                 "new_keys": ["dev/fact_sales_order"]
             }
             result = lambda_load(events, context=None)
-            print (result)
+
+            db_content = test_db.run('SELECT * FROM fact_sales_order;')
+
+            # expected_content = [[1, 
+            #                      14549,
+            #                      datetime.date(2025, 6, 6), 
+            #                      datetime.time(8, 12, 9, 975000), 
+            #                      datetime.date(2025, 6, 6), 
+            #                      datetime.time(8, 12, 9, 975000), 
+            #                      20, 
+            #                      19, 
+            #                      40822, 
+            #                      Decimal('3.21'), 
+            #                      3,
+            #                      322,
+            #                      datetime.date(2025, 6, 7), 
+            #                      datetime.date(2025, 6, 7), 
+            #                      12]]
+
+            assert db_content[0][1] == 14549
+            assert db_content[0][8] == 40822
+            assert db_content[0][14] == 12
+            assert result['items_inserted_into_db'][0].keys() == {'fact_sales_order'}
+            assert result['total_tables_updated'] == 1
+
