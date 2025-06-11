@@ -26,8 +26,6 @@ jobs:
         services:
           postgres:
             image: postgres:14.7
-            env:
-              POSTGRES_PASSWORD: postgres
           ports: 5432:5432
           options: >-
             --health-cmd pg_isready
