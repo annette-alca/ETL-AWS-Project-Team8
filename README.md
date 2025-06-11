@@ -3,16 +3,16 @@
 ## June 2025
 
 ### Overview 
-The project is an `ETL` task, hosted on Amazon Web Services (AWS) involving three lambda functions that perform:
-• `Extraction` of 11 tables of sales data from an OTP database Totesys into an S3 ingestion bucket as JSON files.
-• `Transformation` of 6 of the 11 original tables to create 7 related tables in a star schema format. These are saved in a separate S3 processed bucket as parquet files.
-• `Loading` of data from the parquet files into an OLAP database Warehouse
+The project is an `ETL` task, hosted on Amazon Web Services (AWS) involving three lambda functions that perform:\
+• `Extraction` of 11 tables of sales data from an OTP database Totesys into an S3 ingestion bucket as JSON files.\
+• `Transformation` of 6 of the 11 original tables to create 7 related tables in a star schema format. These are saved in a separate S3 processed bucket as parquet files.\
+• `Loading` of data from the parquet files into an OLAP database Warehouse.
 
 ![alt text](image.png)
 
 After the initial extraction of data, the process is triggered every 20 minutes to collect latest updates to any of the original tables. If there are any new data, these saved into the Warehouse.
 
-This project was written in <ins>Python</ins> using modules 
+This project was written in <ins>Python</ins> using modules: 
 - pg8000 for database connections
 - boto3 for AWS connections
 - pandas and awswrangler to transform tables into dataframes and output files
@@ -32,25 +32,27 @@ Apart from the technical work, the team applied Agile methodology. A [Trello kan
 You will need an AWS account and an IAM user to deploy the terraform infrastructure. 
 
 - Get started by forking and cloning this repository. 
-- Navigate to the terraform directory. In the terminal, run the following:
+- In the terminal, run `make requirements` to create a virtual environment, install dependencies and run checks.
+- Configure AWS Credentials with `aws configure`. Enter your AWS Access Key ID and Secret Access Key.
+- Navigate to the `terraform` directory. In the terminal, run the following:
 ```
 terraform init 
 ```
-\# *Initialises the working directory, containing Terraform configuration files.*   
+*Initialises the working directory, containing Terraform configuration files.*   
 ```
 terraform plan 
 ```
-\# *Creates a preview of the changes Terraform will make.*
+*Creates a preview of the changes Terraform will make.*
 ```
 terraform apply 
 ```
-\# *Performs the changes shown in the plan.* 
+*Performs the changes shown in the plan.* 
 
 - To remove the infrastructure, run:
 ```
 terraform destroy 
 ```
-\# *Destroys the infrastructure.*
+*Destroys the infrastructure.*
 
 ### Collaborators 
 
