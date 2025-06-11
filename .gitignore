@@ -11,3 +11,4 @@ query_helper*
 tempdata
 *.DS_Store
 scratch.txt
+*.ipynb
