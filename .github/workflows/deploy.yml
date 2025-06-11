@@ -41,7 +41,7 @@ jobs:
       - name: Create DB
         run: 
 
-          PGPASSWORD=${{ secrets.LOCALPASSWORD }} psql -U ${{ secrets.LOCALUSER }} -d postgres -c "DROP DATABASE IF EXISTS warehouse; CREATE DATABASE warehouse;"
+          PGPASSWORD=${{ secrets.LOCALPASSWORD }} psql -U ${{ secrets.LOCALUSER }}  -c "DROP DATABASE IF EXISTS warehouse; CREATE DATABASE warehouse;"
 
     
   run-tests:
