@@ -10,7 +10,7 @@ The project is an `ETL` task, hosted on Amazon Web Services (AWS) involving thre
 
 ![alt text](image.png)
 
-After the initial extraction of data, the process is triggered every 20 minutes to collect latest updates to any of the original tables. If there are any new data, these saved into the Warehouse.
+After the initial extraction of data, the process is triggered every 20 minutes to collect latest updates to any of the original tables. If there are any new data, these are saved into the Warehouse. If an error occurs, Cloudwatch email alerts are triggered.
 
 This project was written in <ins>Python</ins> using modules: 
 - pg8000 for database connections
@@ -28,12 +28,17 @@ This project was written in <ins>Python</ins> using modules:
 Apart from the technical work, the team applied Agile methodology. A [Trello kanban board](https://trello.com/invite/b/68307bac1d02b090255089b9/ATTI1ea8b92d44b544cbfe6b8ab2b1593dd9B09F5955/terrific-totes-team-08-trent) was used to organise tasks. Twice daily scrums were held with a rotating scrum leader.
 
 ### Setup Instructions 
+#### Prerequisites 
 
-You will need an AWS account and an IAM user to deploy the terraform infrastructure. 
+You will need Python 3, an AWS account and an IAM user to deploy the terraform infrastructure. 
 
 - Get started by forking and cloning this repository. 
 - In the terminal, run `make requirements` to create a virtual environment, install dependencies and run checks.
-- Configure AWS Credentials with `aws configure`. Enter your AWS Access Key ID and Secret Access Key.
+
+#### Configure AWS Credentials
+- Configure AWS Credentials with `aws configure`. Enter your `AWS Access Key ID` and `Secret Access Key`.
+
+#### Provision AWS Resources with Terraform
 - Navigate to the `terraform` directory. In the terminal, run the following:
 ```
 terraform init 
