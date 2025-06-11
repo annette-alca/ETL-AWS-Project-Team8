@@ -23,15 +23,6 @@ jobs:
         needs: [setup-aws-credentials]
         runs-on: ubuntu-latest
 
-        # services:
-        #   postgres:
-        #     image: postgres:14.7
-        #   ports: 5432:5432
-        #   options: >-
-        #     --health-cmd pg_isready
-        #     --health-interval 10s
-        #     --health-timeout 5s
-        #     --health-retries 5
         services:
           postgres:
             image: postgres:14.7
@@ -56,12 +47,12 @@ jobs:
         - name: Postgresql Client
           run:
             sudo apt-get update
-            sudo apt-get install --yes postgresql-client
+            sudo apt-get install -y postgresql-client
 
         - name: Setup test warehouse
-          run: psql -f tests/data/github_db.sql -p 5432 -h localhost -U postgres
+          run: psql -f tests/data/github_db.sql -p ${{ secrets.PORT}} -h postgres -U ${{ secrets.LOCALUSER}}
           env: 
-            PGPASSWORD: postgres
+            PGPASSWORD: ${{ secrets.LOCALPASSWORD}}
 
         - name: Set Up Python
           uses: actions/setup-python@v5
