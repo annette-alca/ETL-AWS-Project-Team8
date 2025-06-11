@@ -105,9 +105,6 @@ def parquet_to_df(file_key, processed_bucket):
     return df
 
 def insert_df_into_warehouse(db, df, table_name):
-<<<<<<< HEAD
-    # print(df.head(10))
-=======
     """
     Utility function to insert DataFrame rows into a relational database
 
@@ -119,7 +116,6 @@ def insert_df_into_warehouse(db, df, table_name):
     Returns:
         _type_: _description_
     """
->>>>>>> main
     query = f"INSERT INTO {table_name}"
     column_string = ', '.join(df.columns)
     query += f"({column_string}) VALUES"

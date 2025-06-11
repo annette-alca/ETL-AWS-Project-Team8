@@ -194,7 +194,3 @@ def serialise_object(obj):
 #     # db = create_conn(s3c)
 #     # result = get_data(db, "design",None)
 #     # print(dir(db))
-<<<<<<< HEAD
-
-=======
->>>>>>> main
