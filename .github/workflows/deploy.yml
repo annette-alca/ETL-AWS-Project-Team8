@@ -27,13 +27,14 @@ jobs:
         env:
           LOCALUSER: ${{ secrets.LOCALUSER}}
           LOCALDB: ${{ secrets.LOCALDB}}
-          LOCALPASSWORD: ${{ secrets.LOCALPASSWORD}}
+          POSTGRES_PASSWORD: ${{ secrets.LOCALPASSWORD}}
+          
         ports:
           - 5432
         options:
           --health-cmd pg_isready
           --health-interval 10s
-          --health-timeout 5s
+          --health-timeout 10s
           --health-retries 5     
     
     steps:
@@ -44,7 +45,7 @@ jobs:
     
   run-tests:
     name: run-tests
-    needs: setup-aws-credentials
+    needs: [setup-aws-credentials, setup-postgres]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
