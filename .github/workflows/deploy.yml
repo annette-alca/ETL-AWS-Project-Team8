@@ -17,57 +17,64 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
- 
+  
   run-tests:
-    name: run-tests
-    needs: [setup-aws-credentials]
-    runs-on: ubuntu-latest
+        name: run-tests
+        needs: [setup-aws-credentials]
+        runs-on: ubuntu-latest
 
-    # postgres-job:
-    # runs-on: ubuntu-latest
-    container: node:latest     
-    services:
-      postgres:
-        image: postgres:14.7
-        env:
-          POSTGRES_USER: ${{ secrets.LOCALUSER}}
-          POSTGRESS_DB: ${{ secrets.LOCALDB}}
-          POSTGRES_PASSWORD: ${{ secrets.LOCALPASSWORD}}
-          POSTGRES_PORT: ${{ secrets.PORT}}          
-        ports:
-          - 5432:5432          
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 10s
-          --health-retries 5       
+        services:
+          postgres:
+            image: postgres:latest
+            env:
+              POSTGRES_PASSWORD:  ${{ secrets.LOCALPASSWORD}}
+          ports: 5432:5432
+          options: >-
+            --health-cmd pg_isready
+            --health-interval 10s
+            --health-timeout 5s
+            --health-retries 5
 
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-      - name: Set Up Python
-        uses: actions/setup-python@v5
-        with:
-            python-version: '3.12'
-      - name: requirements
-        run: make requirements
 
-      - name: Run checks
-        run: make run-checks
-        env: 
-            DBUSER: ${{ secrets.DBUSER}}
-            DBPASSWORD: ${{ secrets.DBPASSWORD}}
-            DBNAME: ${{ secrets.DBNAME}}
-            HOST: ${{ secrets.HOST}}
-            PORT: ${{ secrets.PORT}}
-            BACKEND_S3: ${{ secrets.BACKEND_S3}}
-            INGESTION_S3: ${{ secrets.INGESTION_S3}}
-            PROCESSED_S3: ${{ secrets.PROCESSED_S3}}
-            HOST_WH: ${{ secrets.HOST_WH}}
-            DBNAME_WH: ${{ secrets.DBNAME_WH}}
-            LOCALUSER: ${{ secrets.LOCALUSER}}
-            LOCALDB: ${{ secrets.LOCALDB}}
-            LOCALPASSWORD: ${{ secrets.LOCALPASSWORD}}
+        steps:
+        - name: Checkout Repo
+          uses: actions/checkout@v4
+
+        - name: Postgresql Client
+          run:
+            sudo apt-get update
+            sudo apt-get install --yes postgresql-client
+
+        - name: Setup test warehouse
+          run: psql -f tests/data/github_db.sql -p 5432 -h localhost -U postgres
+          env: 
+            PGPASSWORD: ${{ secrets.LOCALPASSWORD}}
+
+        - name: Set Up Python
+          uses: actions/setup-python@v5
+          with:
+              python-version: '3.12'
+        
+        - name: requirements
+          run: make requirements
+
+
+        - name: Run checks
+          run: make run-checks
+          env: 
+              DBUSER: ${{ secrets.DBUSER}}
+              DBPASSWORD: ${{ secrets.DBPASSWORD}}
+              DBNAME: ${{ secrets.DBNAME}}
+              HOST: ${{ secrets.HOST}}
+              PORT: ${{ secrets.PORT}}
+              BACKEND_S3: ${{ secrets.BACKEND_S3}}
+              INGESTION_S3: ${{ secrets.INGESTION_S3}}
+              PROCESSED_S3: ${{ secrets.PROCESSED_S3}}
+              HOST_WH: ${{ secrets.HOST_WH}}
+              DBNAME_WH: ${{ secrets.DBNAME_WH}}
+              LOCALUSER: ${{ secrets.LOCALUSER}}
+              LOCALDB: ${{ secrets.LOCALDB}}
+              LOCALPASSWORD: ${{ secrets.LOCALPASSWORD}}
             
 # commit      
     
