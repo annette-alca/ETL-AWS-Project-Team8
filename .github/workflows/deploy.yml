@@ -48,11 +48,8 @@ jobs:
           run:
             sudo apt-get update && sudo apt-get install -y postgresql-client
 
-        - name: Wait 15s for PostgreSQL to be ready
-          run: sleep 15
-
         - name: Setup test warehouse
-          run: psql -f tests/data/github_db.sql -p ${{ secrets.PORT}} -U ${{ secrets.LOCALUSER}}
+          run: psql -p ${{ secrets.PORT}} -U ${{ secrets.LOCALUSER}} -c DROP DATABASE IF EXISTS warehouse; CREATE DATABASE warehouse;
           env: 
             PGPASSWORD: ${{ secrets.LOCALPASSWORD}}
 
