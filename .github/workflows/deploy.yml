@@ -17,19 +17,21 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-  
-  setup-postgres:
-    name: Postgres Setup
+  postgres-job:
     runs-on: ubuntu-latest
+    
+    container: node:latest
+      
     services:
       postgres:
         image: postgres:14.7
         env:
-          LOCALUSER: ${{ secrets.LOCALUSER}}
-          LOCALDB: ${{ secrets.LOCALDB}}
+          POSTGRES_USER: ${{ secrets.LOCALUSER}}
+          POSTGRESS_DB: ${{ secrets.LOCALDB}}
           POSTGRES_PASSWORD: ${{ secrets.LOCALPASSWORD}}
-          HOST: postgres
-          PORT: ${{ secrets.PORT}}
+          
+        ports:
+          - 5432:5432
           
         options:
           --health-cmd pg_isready
@@ -38,18 +40,19 @@ jobs:
           --health-retries 5     
     
     steps:
-      - name: Client-setup
+      - name: Install Postgresql Client
         run:
-          sudo apt-get update && sudo apt-get install -y postgresql-client
+          apt-get-update
+          ape-get-install --yes postgresql-client
+      
       - name: Create DB
         run: 
-
-          PGPASSWORD=${{ secrets.LOCALPASSWORD }} psql -U ${{ secrets.LOCALUSER }}  -c "DROP DATABASE IF EXISTS warehouse; CREATE DATABASE warehouse;"
+          psql -h postgres -d postgres_db -U ${{ secrets.LOCALUSER }}  -c "DROP DATABASE IF EXISTS warehouse; CREATE DATABASE warehouse;"
 
     
   run-tests:
     name: run-tests
-    needs: [setup-aws-credentials, setup-postgres]
+    needs: [setup-aws-credentials]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
