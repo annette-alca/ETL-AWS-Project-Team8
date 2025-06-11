@@ -27,7 +27,7 @@ jobs:
           postgres:
             image: postgres:14.7
             env:
-              POSTGRES_PASSWORD:  ${{ secrets.LOCALPASSWORD}}
+              POSTGRES_PASSWORD: postgres
           ports: 5432:5432
           options: >-
             --health-cmd pg_isready
@@ -48,7 +48,7 @@ jobs:
         - name: Setup test warehouse
           run: psql -f tests/data/github_db.sql -p 5432 -h localhost -U postgres
           env: 
-            PGPASSWORD: ${{ secrets.LOCALPASSWORD}}
+            PGPASSWORD: postgres
 
         - name: Set Up Python
           uses: actions/setup-python@v5
