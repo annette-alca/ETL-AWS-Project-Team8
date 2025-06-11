@@ -26,11 +26,6 @@ jobs:
         services:
           postgres:
             image: postgres:14.7
-            env:
-              LOCALUSER: ${{ secrets.LOCALUSER}}
-              LOCALDB: ${{ secrets.LOCALDB}}
-              POSTGRES_PASSWORD: ${{ secrets.LOCALPASSWORD}}
-              PORT: ${{ secrets.PORT}}
             
             options:
               --health-cmd pg_isready
