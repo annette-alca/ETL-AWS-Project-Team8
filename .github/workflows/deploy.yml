@@ -17,8 +17,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-  postgres-job:
+ 
+  run-tests:
+    name: run-tests
+    needs: [setup-aws-credentials]
     runs-on: ubuntu-latest
+
+    # postgres-job:
+    # runs-on: ubuntu-latest
     container: node:latest     
     services:
       postgres:
@@ -34,13 +40,8 @@ jobs:
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 10s
-          --health-retries 5         
+          --health-retries 5       
 
-    
-  run-tests:
-    name: run-tests
-    needs: [setup-aws-credentials, postgres-job]
-    runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
