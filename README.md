@@ -1,7 +1,8 @@
 # Welcome to DE-Terrific-Totes-Team-8
 ## Team Trent's Northcoders project 
 ## June 2025
- 
+
+### Overview 
 The project is an `ETL` task, hosted on Amazon Web Services (AWS) involving three lambda functions that perform:
 • `Extraction` of 11 tables of sales data from an OTP database Totesys into an S3 ingestion bucket as JSON files.
 • `Transformation` of 6 of the 11 original tables to create 7 related tables in a star schema format. These are saved in a separate S3 processed bucket as parquet files.
@@ -22,5 +23,39 @@ This project was written in <ins>Python</ins> using modules
 
 <ins>SQL</ins> was used within or outside pg8000 to query and write to the databases.
 
+<ins>Tableau</ins> was used for data visualisation.
+
 Apart from the technical work, the team applied Agile methodology. A [Trello kanban board](https://trello.com/invite/b/68307bac1d02b090255089b9/ATTI1ea8b92d44b544cbfe6b8ab2b1593dd9B09F5955/terrific-totes-team-08-trent) was used to organise tasks. Twice daily scrums were held with a rotating scrum leader.
 
+### Setup Instructions 
+
+You will need an AWS account and an IAM user to deploy the terraform infrastructure. 
+
+- Get started by forking and cloning this repository. 
+- Navigate to the terraform directory. In the terminal, run the following:
+```
+terraform init 
+```
+\# *Initialises the working directory, containing Terraform configuration files.*   
+```
+terraform plan 
+```
+\# *Creates a preview of the changes Terraform will make.*
+```
+terraform apply 
+```
+\# *Performs the changes shown in the plan.* 
+
+- To remove the infrastructure, run:
+```
+terraform destroy 
+```
+\# *Destroys the infrastructure.*
+
+### Collaborators 
+
+[Ethan Yee](https://github.com/EthanYee9)  
+[Annette Alcasabas](https://github.com/annette-alca)\
+[Leighton Jones](https://github.com/LeightonJones)\
+[Eashin Matubber](https://github.com/eeashin)\
+[Sonika Jha](https://github.com/s-onika) 
