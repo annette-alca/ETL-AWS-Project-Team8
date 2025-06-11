@@ -30,7 +30,7 @@ jobs:
               LOCALUSER: ${{ secrets.LOCALUSER}}
               LOCALDB: ${{ secrets.LOCALDB}}
               POSTGRES_PASSWORD: ${{ secrets.LOCALPASSWORD}}
-              HOST: postgres
+              HOST: localhost
               PORT: ${{ secrets.PORT}}
             
             options:
