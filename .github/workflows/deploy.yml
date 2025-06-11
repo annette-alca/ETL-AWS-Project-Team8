@@ -48,9 +48,9 @@ jobs:
             sudo apt-get update && sudo apt-get install -y postgresql-client
 
         - name: Setup test warehouse
-          run: psql -p ${{ secrets.PORT}} -h localhost -U ${{ secrets.LOCALUSER}} -c 'DROP DATABASE IF EXISTS warehouse; CREATE DATABASE warehouse;'
+          run: psql -p 5432 -h localhost -U postgres -c 'DROP DATABASE IF EXISTS warehouse; CREATE DATABASE warehouse;'
           env: 
-            PGPASSWORD: ${{ secrets.LOCALPASSWORD}}
+            PGPASSWORD: postgres
 
         - name: Set Up Python
           uses: actions/setup-python@v5
