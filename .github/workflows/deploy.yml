@@ -40,7 +40,8 @@ jobs:
     steps:
       - name: Create DB
         run: 
-          psql -f .github/workflows/github_db.sql -U ${{ secrets.LOCALUSER}} -d ${{ secrets.LOCALDB}}
+
+          PGPASSWORD=${{ secrets.LOCALPASSWORD }} psql -h localhost -U ${{ secrets.LOCALUSER }} -d postgres -c "DROP DATABASE IF EXISTS warehouse; CREATE DATABASE warehouse;"
 
     
   run-tests:
