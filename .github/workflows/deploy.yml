@@ -40,7 +40,7 @@ jobs:
     steps:
       - name: Create DB
         run: 
-          psql -f .github/workflows/github_db.sql -u ${{ secrets.LOCALUSER}} -p ${{ secrets.LOCALPASSWORD}} -d ${{ secrets.LOCALDB}}
+          psql -f .github/workflows/github_db.sql -U ${{ secrets.LOCALUSER}} -p ${{ secrets.LOCALPASSWORD}} -d ${{ secrets.LOCALDB}}
 
     
   run-tests:
