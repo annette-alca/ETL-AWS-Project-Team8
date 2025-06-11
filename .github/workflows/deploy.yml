@@ -28,9 +28,9 @@ jobs:
           LOCALUSER: ${{ secrets.LOCALUSER}}
           LOCALDB: ${{ secrets.LOCALDB}}
           POSTGRES_PASSWORD: ${{ secrets.LOCALPASSWORD}}
+          HOST: ${{ secrets.HOST}}
+          PORT: ${{ secrets.PORT}}
           
-        ports:
-          - 5432
         options:
           --health-cmd pg_isready
           --health-interval 10s
