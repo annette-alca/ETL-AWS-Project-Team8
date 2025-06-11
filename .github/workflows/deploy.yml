@@ -40,7 +40,7 @@ jobs:
     steps:
       - name: Create DB
         run: 
-          psql -f ./github_db.sql 
+          psql -f .github/workflows/deploy.yml
 
     
   run-tests:
