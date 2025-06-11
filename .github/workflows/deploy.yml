@@ -23,15 +23,30 @@ jobs:
         needs: [setup-aws-credentials]
         runs-on: ubuntu-latest
 
+        # services:
+        #   postgres:
+        #     image: postgres:14.7
+        #   ports: 5432:5432
+        #   options: >-
+        #     --health-cmd pg_isready
+        #     --health-interval 10s
+        #     --health-timeout 5s
+        #     --health-retries 5
         services:
           postgres:
             image: postgres:14.7
-          ports: 5432:5432
-          options: >-
-            --health-cmd pg_isready
-            --health-interval 10s
-            --health-timeout 5s
-            --health-retries 5
+            env:
+              LOCALUSER: ${{ secrets.LOCALUSER}}
+              LOCALDB: ${{ secrets.LOCALDB}}
+              POSTGRES_PASSWORD: ${{ secrets.LOCALPASSWORD}}
+              HOST: postgres
+              PORT: ${{ secrets.PORT}}
+            
+            options:
+              --health-cmd pg_isready
+              --health-interval 10s
+              --health-timeout 10s
+              --health-retries 5     
 
 
         steps:
