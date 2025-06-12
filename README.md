@@ -12,12 +12,15 @@ The project is an `ETL` task, hosted on Amazon Web Services (AWS) involving thre
 
 After the initial extraction of data, the process is triggered every 20 minutes to collect latest updates to any of the original tables. If there are any new data, these are saved into the Warehouse. If an error occurs, Cloudwatch email alerts are triggered.
 
-This project was written in <ins>Python</ins> using modules: 
+We used github actions for automating our CI/CD. We used a makefile to create the virtual environment, install dependencies and run tests. 
+
+This project was written in <ins>Python 3.13 </ins> using modules: 
 - pg8000 for database connections
 - boto3 for AWS connections
 - pandas and awswrangler to transform tables into dataframes and output files
 - pytest for unit and integration testing
 - moto for testing of functions using AWS clients and resources
+- bandit, pip-audit, flake8 and black were used to make security and pep-8 compliance checks  
 
 <ins>Terraform</ins> was used to set up infrastructure on the AWS cloud.
 
