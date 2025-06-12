@@ -7,7 +7,7 @@ import boto3
 import os
 import json
 from pprint import pprint # for local viewing
-import dotenv #local implementation
+# import dotenv #local implementation
 
 def lambda_load(events, context):
     """
@@ -61,7 +61,7 @@ def create_conn(s3_client):
         Connection (Object): pg8000.native object with environment credentials
     """
 
-    dotenv.load_dotenv()
+    # dotenv.load_dotenv()
     user = os.environ["DBUSER"]
     database = os.environ["DBNAME_WH"] 
     dbhost = os.environ["HOST_WH"] 
