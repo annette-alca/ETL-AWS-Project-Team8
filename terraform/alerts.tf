@@ -6,7 +6,7 @@ resource "aws_sns_topic" "lambda_extract_alerts" {
 resource "aws_sns_topic_subscription" "extract_email_alert" {
   topic_arn = aws_sns_topic.lambda_extract_alerts.arn
   protocol  = "email"
-  endpoint  = "eashin@gmail.com" 
+  endpoint  = "example@gmail.com" 
 }
 
 resource "aws_cloudwatch_metric_alarm" "lambda_extract_error_alarm" {
@@ -34,7 +34,7 @@ resource "aws_sns_topic" "lambda_transform_alerts" {
 resource "aws_sns_topic_subscription" "transform_email_alert" {
   topic_arn = aws_sns_topic.lambda_transform_alerts.arn
   protocol  = "email"
-  endpoint  = "ethanyee9@gmail.com" 
+  endpoint  = "example@gmail.com" 
 }
 
 resource "aws_cloudwatch_metric_alarm" "lambda_transform_error_alarm" {
@@ -62,7 +62,7 @@ resource "aws_sns_topic" "lambda_load_alerts" {
 resource "aws_sns_topic_subscription" "load_email_alert" {
   topic_arn = aws_sns_topic.lambda_load_alerts.arn
   protocol = "email"
-  endpoint = "sonikajha96@gmail.com"
+  endpoint = "example@gmail.com"
 }
 
 resource "aws_cloudwatch_metric_alarm" "lambda_load_error_alarm" {
