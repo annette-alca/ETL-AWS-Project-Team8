@@ -8,7 +8,8 @@ The project is an `ETL` task, hosted on Amazon Web Services (AWS) involving thre
 • `Transformation` of 6 of the 11 original tables to create 7 related tables in a star schema format. These are saved in a separate S3 processed bucket as parquet files.\
 • `Loading` of data from the parquet files into an OLAP database Warehouse.
 
-![alt text](image.png)
+![Screenshot from 2025-06-13 09-06-46](https://github.com/user-attachments/assets/46eb4e3f-5105-4248-9355-210f6c8fb441)
+
 
 After the initial extraction of data, the process is triggered every 20 minutes to collect latest updates to any of the original tables. If there are any new data, these are saved into the Warehouse. If an error occurs, Cloudwatch email alerts are triggered.
 
