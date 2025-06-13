@@ -12,3 +12,4 @@ tempdata
 *.DS_Store
 scratch.txt
 *.ipynb
+sql
