@@ -31,6 +31,9 @@ This project was written in <ins>Python 3.13 </ins> using modules:
 
 Apart from the technical work, the team applied Agile methodology. A [Trello kanban board](https://trello.com/invite/b/68307bac1d02b090255089b9/ATTI1ea8b92d44b544cbfe6b8ab2b1593dd9B09F5955/terrific-totes-team-08-trent) was used to organise tasks. Twice daily scrums were held with a rotating scrum leader.
 
+![image](https://github.com/user-attachments/assets/5faecfed-3bb3-4e46-8e64-841b14f5de99)
+
+
 ### Setup Instructions 
 #### Prerequisites 
 
