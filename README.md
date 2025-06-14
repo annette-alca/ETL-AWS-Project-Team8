@@ -37,13 +37,22 @@ Apart from the technical work, the team applied Agile methodology. A Trello kanb
 ### Setup Instructions 
 #### Prerequisites 
 
-You will need Python 3, an AWS account and an IAM user to deploy the terraform infrastructure. 
+You will need Python 3 (we used 3.13), Terraform installed locally, an AWS account and an IAM user to deploy the terraform infrastructure. 
+You will need to pre-configure an S3 bucket on AWS as a backend bucket for Terraform tfstate file. 
 
 - Get started by forking and cloning this repository. 
 - In the terminal, run `make requirements` to create a virtual environment, install dependencies and run checks.
 
 #### Configure AWS Credentials
 - Configure AWS Credentials with `aws configure`. Enter your `AWS Access Key ID` and `Secret Access Key`.
+
+### Enter backend S3 information
+- Enter your S3 backend bucket name and chosen tfstate key in terraform/main.tf on designated lines with #sample, user to change
+- Enter your S3 backet bucket name in terraform/lambda.tf where it is specified and is marked by #sample, user to change
+
+#### Configure Database Credentials
+- Enter your OTP and OLAP database settings in the terraform/lambda.tf file on designated lines with #sample, user to change
+- Create a secrets.json file with your database passwords in this format {'totesys': your OTP password, 'warehouse': your OLAP password} and save it to a folder called secrets in your backend bucket.
 
 #### Provision AWS Resources with Terraform
 - Navigate to the `terraform` directory. In the terminal, run the following:

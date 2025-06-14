@@ -6,8 +6,8 @@ terraform {
     }
   }
   backend "s3" {
-    bucket = "bucket-to-hold-tf-state-for-terraform"
-    key    = "de-project-terrific-totes/terraform.tfstate"
+    bucket = "bucket-to-hold-tf-state-for-terraform" #sample, user to change
+    key    = "de-project-terrific-totes/terraform.tfstate" #sample, user to change
     region = "eu-west-2"
 }
 }

@@ -37,11 +37,11 @@ resource "aws_lambda_function" "extract_lambda" {
   environment {
     variables = {
 
-      BACKEND_S3 = "bucket-to-hold-tf-state-for-terraform"
+      BACKEND_S3 = "sample_bucket-to-hold-tf-state-for-terraform" #sample, user to change
       INGESTION_S3 = aws_s3_bucket.ingestion_s3.bucket
-      DBUSER = "project_team_08"
-      DBNAME = "totesys"
-      HOST = "nc-data-eng-totesys-production.chpsczt8h1nu.eu-west-2.rds.amazonaws.com"
+      DBUSER = "project_team_08" #sample, user to change
+      DBNAME = "totesys" #sample, user to change
+      HOST = "sample_OTP_db" #sample, user to change
       PORT = 5432
     }
   }
@@ -88,7 +88,7 @@ resource "aws_lambda_function" "transform_lambda" {
   environment {
     variables = {
 
-      BACKEND_S3 = "bucket-to-hold-tf-state-for-terraform"
+      BACKEND_S3 = "bucket-to-hold-tf-state-for-terraform" #sample, user to change
       INGESTION_S3 = aws_s3_bucket.ingestion_s3.bucket
       PROCESSED_S3 = aws_s3_bucket.processed_s3.bucket
     }
@@ -136,11 +136,11 @@ resource "aws_lambda_function" "load_lambda" {
   environment {
     variables = {
 
-      BACKEND_S3 = "bucket-to-hold-tf-state-for-terraform"
+      BACKEND_S3 = "bucket-to-hold-tf-state-for-terraform" #sample, user to change
       PROCESSED_S3 = aws_s3_bucket.processed_s3.bucket
-      DBUSER = "project_team_08"
-      DBNAME_WH = "postgres"
-      HOST_WH = "nc-data-eng-project-dw-prod.chpsczt8h1nu.eu-west-2.rds.amazonaws.com"
+      DBUSER = "project_team_08" #sample, user to change
+      DBNAME_WH = "postgres" #sample, user to change
+      HOST_WH = "sample_OLAP_DB.amazonaws.com" #sample, user to change
       PORT = 5432
     }
   }
