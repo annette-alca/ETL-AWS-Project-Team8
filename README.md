@@ -46,7 +46,7 @@ You will need to pre-configure an S3 bucket on AWS as a backend bucket for Terra
 #### Configure AWS Credentials
 - Configure AWS Credentials with `aws configure`. Enter your `AWS Access Key ID` and `Secret Access Key`.
 
-### Enter backend S3 information
+#### Enter backend S3 information
 - Enter your S3 backend bucket name and chosen tfstate key in terraform/main.tf on designated lines with #sample, user to change
 - Enter your S3 backet bucket name in terraform/lambda.tf where it is specified and is marked by #sample, user to change
 
