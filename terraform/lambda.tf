@@ -41,7 +41,7 @@ resource "aws_lambda_function" "extract_lambda" {
       INGESTION_S3 = aws_s3_bucket.ingestion_s3.bucket
       DBUSER = "project_team_08" #sample, user to change
       DBNAME = "totesys" #sample, user to change
-      HOST = "sample_OTP_db" #sample, user to change
+      HOST = "nc-data-eng-totesys-production.chpsczt8h1nu.eu-west-2.rds.amazonaws.com" 
       PORT = 5432
     }
   }
@@ -140,7 +140,7 @@ resource "aws_lambda_function" "load_lambda" {
       PROCESSED_S3 = aws_s3_bucket.processed_s3.bucket
       DBUSER = "project_team_08" #sample, user to change
       DBNAME_WH = "postgres" #sample, user to change
-      HOST_WH = "sample_OLAP_DB.amazonaws.com" #sample, user to change
+      HOST_WH = "nc-data-eng-project-dw-prod.chpsczt8h1nu.eu-west-2.rds.amazonaws.com"
       PORT = 5432
     }
   }
